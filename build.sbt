@@ -35,7 +35,12 @@ lazy val root = project.in(file("."))
 lazy val commonDependencies = Seq(
   "com.typesafe" % "config" % "1.4.0",
   "ch.qos.logback" % "logback-classic" % "1.2.3",
-  "org.clapper" %% "grizzled-slf4j" % "1.3.4"
+  "org.clapper" %% "grizzled-slf4j" % "1.3.4",
+  "com.beachape" %% "enumeratum" % "1.5.15",
+  "org.json4s" %% "json4s-native" % "3.6.7",
+  "com.softwaremill.sttp.client" %% "core" % "2.0.6",
+  "com.softwaremill.sttp.client" %% "json4s" % "2.0.6",
+  "com.softwaremill.sttp.client" %% "async-http-client-backend-future" % "2.0.6"
 )
 
 lazy val testDependencies = Seq(
