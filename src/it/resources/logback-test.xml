@@ -20,7 +20,7 @@
         <appender-ref ref="STDOUT"/>
     </appender>
 
-    <logger name="com.uralian" level="INFO"/>
+    <logger name="com.uralian" level="DEBUG"/>
 
     <root level="INFO">
         <appender-ref ref="ASYNCFILE"/>
