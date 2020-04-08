@@ -76,4 +76,6 @@ trait JsonUtils {
 /**
  * A singleton for JSON helper methods.
  */
-object JsonUtils extends JsonUtils
+object JsonUtils extends JsonUtils {
+  val commonSerializers = List(instantSerializerAsSeconds, urlSerializer)
+}

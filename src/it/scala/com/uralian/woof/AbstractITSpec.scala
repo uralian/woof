@@ -7,7 +7,7 @@ import org.scalatest.time.{Millis, Seconds, Span}
 /**
  * Base trait for integration test specifications.
  */
-class AbstractITSpec extends Suite
+abstract class AbstractITSpec extends Suite
   with WordSpecLike
   with MustMatchers
   with BeforeAndAfterAll

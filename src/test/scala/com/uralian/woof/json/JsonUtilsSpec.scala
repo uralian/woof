@@ -12,7 +12,7 @@ class JsonUtilsSpec extends AbstractUnitSpec {
 
   import JsonUtils._
 
-  "JsonUtils.combine()" should {
+  "combine()" should {
     "combine partial functions" in {
       val pf1: PartialFunction[Int, String] = {
         case 1 => "one"
@@ -34,7 +34,7 @@ class JsonUtilsSpec extends AbstractUnitSpec {
     }
   }
 
-  "JsonUtils.renameFieldsToJson()" should {
+  "renameFieldsToJson()" should {
     "produce a FieldSerializer" in {
       val pf = renameFieldsToJson("a" -> "AAA", "b" -> "BBB")
       pf("a" -> 1) mustBe Some("AAA" -> 1)
@@ -43,7 +43,7 @@ class JsonUtilsSpec extends AbstractUnitSpec {
     }
   }
 
-  "JsonUtils.renameFieldsFromJson()" should {
+  "renameFieldsFromJson()" should {
     "produce a FieldSerializer" in {
       val pf = renameFieldsFromJson("AAA" -> "a", "BBB" -> "b")
       pf("AAA" -> JInt(1)) mustBe "a" -> JInt(1)
@@ -52,7 +52,7 @@ class JsonUtilsSpec extends AbstractUnitSpec {
     }
   }
 
-  "JsonUtils.translateFields()" should {
+  "translateFields()" should {
     val fs = translateFields[TestData]("relatedEventId" -> "related_id", "eventSource" -> "source")
     implicit val formats = DefaultFormats + fs
     "translate Scala field names to JSON" in {
@@ -67,7 +67,7 @@ class JsonUtilsSpec extends AbstractUnitSpec {
     }
   }
 
-  "JsonUtils.instantSerializerAsSeconds" should {
+  "instantSerializerAsSeconds" should {
     implicit val formats = DefaultFormats + instantSerializerAsSeconds
     val seconds = System.currentTimeMillis()
     "translate java.time.Instant to JSON as number of seconds since Epoch" in {
@@ -87,7 +87,7 @@ class JsonUtilsSpec extends AbstractUnitSpec {
     }
   }
 
-  "JsonUtils.urlSerializer" should {
+  "urlSerializer" should {
     implicit val formats = DefaultFormats + urlSerializer
     val str = "http://www.example.com:8080/secret"
     "translate java.net.URL into JSON string" in {
