@@ -21,7 +21,6 @@ ThisBuild / scalacOptions in(Compile, doc) ++= Seq("-no-link-warnings")
 // scoverage options
 coverageHighlighting in ThisBuild := true
 coverageMinimum in ThisBuild := 80
-coverageFailOnMinimum in ThisBuild := true
 
 lazy val root = project.in(file("."))
   .settings(name := "woof-core")
