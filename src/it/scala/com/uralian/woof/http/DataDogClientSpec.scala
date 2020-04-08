@@ -17,10 +17,10 @@ class DataDogClientSpec extends AbstractITSpec {
   implicit val serialization = org.json4s.native.Serialization
 
   val client = DataDogClient()
-  val apiClient = new DataDogClient(sys.env(DataDogClient.ApiKeyEnv), None)
+  val apiClient = new DataDogClient(sys.env(DataDogClient.ApiKeyEnv), None, DataDogSite.US)
   val noClient = new DataDogClient("-", None)
 
-  "constructor" should {
+  "DataDogClient" should {
     "fail for missing api key" in {
       an[IllegalArgumentException] mustBe thrownBy(new DataDogClient("", None))
     }

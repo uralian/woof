@@ -1,5 +1,7 @@
 package com.uralian.woof.http
 
+import java.net.URL
+
 import com.uralian.woof.api.DataDogApiError
 import grizzled.slf4j.Logging
 import org.json4s.Formats
@@ -16,14 +18,26 @@ import scala.concurrent.{ExecutionContext, Future}
  *
  * @param apiKey         DataDog API Key (needed for Reads and Writes).
  * @param applicationKey DataDog Application Key (needed for Reads).
- * @param site           DataDog site.
+ * @param url            DataDog site URL.
  */
-class DataDogClient(apiKey: String, applicationKey: Option[String], site: DataDogSite = DataDogSite.Default)
-  extends Logging {
-
-  require(Option(apiKey).filterNot(_.trim.isEmpty).isDefined)
-
+class DataDogClient(apiKey: String,
+                    applicationKey: Option[String],
+                    url: URL = new URL(DataDogSite.Default.url)) extends Logging {
   import DataDogClient._
+
+  require(Option(apiKey).filterNot(_.trim.isEmpty).isDefined, "API Key undefined")
+
+  info(s"DataDog client created: (apiKey=******, applicationKey=******, url=$url)")
+
+  /**
+   * Creates a new DataDog HTTP client.
+   *
+   * @param apiKey         DataDog API Key (needed for Reads and Writes).
+   * @param applicationKey DataDog Application Key (needed for Reads).
+   * @param site           DataDog site.
+   */
+  def this(apiKey: String, applicationKey: Option[String], site: DataDogSite) =
+    this(apiKey, applicationKey, new URL(site.url))
 
   private implicit val backend = AsyncHttpClientFutureBackend()
 
@@ -66,7 +80,7 @@ class DataDogClient(apiKey: String, applicationKey: Option[String], site: DataDo
    */
   def httpPost[Q <: AnyRef, R: Manifest](path: String, request: Q, params: (String, Any)*)
                                         (implicit formats: Formats, ec: ExecutionContext): Future[R] = {
-    val uri = uri"${api(path)}?api_key=$apiKey"
+    val uri = uri"${api(path)}?api_key=$apiKey&$params"
     val response = basicRequest
       .post(uri)
       .contentType(MediaType.ApplicationJson)
@@ -82,7 +96,7 @@ class DataDogClient(apiKey: String, applicationKey: Option[String], site: DataDo
    * @param path
    * @return
    */
-  private def api(path: String) = site.url + "/api/" + path
+  private def api(path: String) = url.toExternalForm + "/api/" + path
 
   /**
    * Strips down the response to the message body, converting response errors into exception.
@@ -116,12 +130,10 @@ object DataDogClient {
    *
    * @return
    */
-  // $COVERAGE-OFF$
   def apply(): DataDogClient = {
     val apiKey = sys.env(ApiKeyEnv)
     val applicationKey = sys.env.get(ApplicationKeyEnv)
-    val site = sys.env.get(DatadogHostEnv).map(DataDogSite.withName).getOrElse(DataDogSite.Default)
-    new DataDogClient(apiKey, applicationKey, site)
+    val url = new URL(sys.env.get(DatadogHostEnv).getOrElse(DataDogSite.Default.url))
+    new DataDogClient(apiKey, applicationKey, url)
   }
-  // $COVERAGE-ON$
 }

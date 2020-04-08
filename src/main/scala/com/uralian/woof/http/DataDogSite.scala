@@ -3,7 +3,7 @@ package com.uralian.woof.http
 import enumeratum._
 
 /**
- * Encapsulates DataDog site.
+ * DataDog site.
  *
  * @param url
  */

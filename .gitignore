@@ -12,6 +12,7 @@ project/boot/
 project/plugins/project/
 .history
 boot/
+.env
 
 # Scala-IDE/Eclipse
 .scala_dependencies
