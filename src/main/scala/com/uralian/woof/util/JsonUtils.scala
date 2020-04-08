@@ -1,4 +1,4 @@
-package com.uralian.woof.json
+package com.uralian.woof.util
 
 import java.net.URL
 import java.time.Instant

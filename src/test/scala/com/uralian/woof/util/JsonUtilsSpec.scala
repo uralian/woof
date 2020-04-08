@@ -1,7 +1,6 @@
-package com.uralian.woof.json
+package com.uralian.woof.util
 
 import com.uralian.woof.AbstractUnitSpec
-import com.uralian.woof.json.JsonUtilsSpec.TestData
 import org.json4s.JsonDSL._
 import org.json4s._
 
@@ -11,6 +10,7 @@ import org.json4s._
 class JsonUtilsSpec extends AbstractUnitSpec {
 
   import JsonUtils._
+  import JsonUtilsSpec._
 
   "combine()" should {
     "combine partial functions" in {
