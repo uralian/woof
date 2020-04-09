@@ -1,7 +1,7 @@
-package com.uralian.woof.api.events
+package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api._
+import com.uralian.woof.api.events.{AlertType, CreateEventData, EventQuery, EventsHttpApi, Priority}
 import com.uralian.woof.http.DataDogClient
 import com.uralian.woof.util.Retry
 
@@ -65,8 +65,9 @@ class EventsHttpApiSpec extends AbstractITSpec {
       event.tags mustBe ddTags
     }
     "query event stream in DataDog by tags and time frame" in {
-      val from = currentTime().minusSeconds(3600 * 5)
-      val to = currentTime().plusSeconds(3600 * 5)
+      Thread.sleep(5000)
+      val from = currentTime().minusSeconds(3600 * 10)
+      val to = currentTime().plusSeconds(3600 * 10)
       val query = EventQuery(from, to).withTags(ddTags: _*).noAggregation
       val events = Retry.retryFuture(5, 5 seconds)(() => api.query(query)).futureValue
       events.size mustBe 1

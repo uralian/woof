@@ -30,7 +30,7 @@ trait EventsApi {
    * Queries DataDog event stream.
    *
    * @param query event query.
-   * @return
+   * @return a sequence of events.
    */
   def query(query: EventQuery): Future[Seq[Event]]
 }
@@ -46,17 +46,19 @@ class EventsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
 
   val path = "v1/events"
 
-  def create(data: CreateEventData): Future[Event] = postAndExtract(path, data, json => {
+  def create(data: CreateEventData): Future[Event] = apiPostJ[CreateEventData](path, data).map { json =>
     val event = (json \ "event").extract[Event]
     val status = (json \ "status").extract[String]
     event -> status
-  }).collect {
+  }.collect {
     case (event, "ok") => event
   }
 
-  def get(eventId: Long): Future[Event] =
-    getAndExtract(s"$path/$eventId", NoParams, json => (json \ "event").extract[Event])
+  def get(eventId: Long): Future[Event] = apiGetJ(s"$path/$eventId") map { json =>
+    (json \ "event").extract[Event]
+  }
 
-  def query(query: EventQuery): Future[Seq[Event]] =
-    getAndExtract(path, query, json => (json \ "events").extract[Seq[Event]])
+  def query(query: EventQuery): Future[Seq[Event]] = apiGetJ(path, query) map { json =>
+    (json \ "events").extract[Seq[Event]]
+  }
 }
