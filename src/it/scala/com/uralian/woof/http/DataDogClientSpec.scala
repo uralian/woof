@@ -13,12 +13,14 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class DataDogClientSpec extends AbstractITSpec {
 
+  import Authenticator._
+
   implicit val formats = DefaultFormats
   implicit val serialization = org.json4s.native.Serialization
 
   val client = DataDogClient()
-  val apiClient = new DataDogClient(sys.env(DataDogClient.ApiKeyEnv), None, DataDogSite.US)
-  val noClient = new DataDogClient("-", None)
+  val apiClient = new DataDogClient(sys.env(ApiKeyEnv), None, DataDogSite.US)
+  val noAuthClient = new DataDogClient("invalid key", None)
 
   "DataDogClient" should {
     "fail for missing api key" in {
@@ -28,11 +30,11 @@ class DataDogClientSpec extends AbstractITSpec {
 
   "httpGet" should {
     "return response for valid requests" in {
-      val result = client.httpGet[TestResponse]("v1/validate")
+      val result = client.httpGet[TestResponse]("v1/validate", AddQueryParam)
       result.futureValue mustBe TestResponse(true)
     }
     "throw backend error for unsuccsessful requests" in {
-      val result = noClient.httpGet[String]("v1/validate")
+      val result = noAuthClient.httpGet[String]("v1/validate", AddHeaders)
       inside(result.failed.futureValue) {
         case e: DataDogApiError => e.code mustBe StatusCode.Forbidden.code
       }
@@ -41,13 +43,13 @@ class DataDogClientSpec extends AbstractITSpec {
 
   "httpPost" should {
     "return response for valid requests" in {
-      val result = apiClient.httpPost[TestRequest, JValue]("v1/events", TestRequest("test", "test event"))
+      val result = apiClient.httpPost[TestRequest, JValue]("v1/events", TestRequest("test", "test event"), AddQueryParam)
       val json = result.futureValue
       json \ "status" mustBe JString("ok")
       json \ "event" \ "title" mustBe JString("test")
     }
     "throw backend error for unsuccsessful requests" in {
-      val result = noClient.httpGet[String]("v1/validate")
+      val result = noAuthClient.httpGet[String]("v1/validate", AddQueryParam)
       inside(result.failed.futureValue) {
         case e: DataDogApiError => e.code mustBe StatusCode.Forbidden.code
       }
