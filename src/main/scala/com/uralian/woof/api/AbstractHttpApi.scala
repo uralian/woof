@@ -1,6 +1,6 @@
 package com.uralian.woof.api
 
-import com.uralian.woof.http.DataDogClient
+import com.uralian.woof.http.{Authenticator, DataDogClient}
 import org.json4s.{Formats, JValue}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -14,49 +14,104 @@ import scala.concurrent.{ExecutionContext, Future}
  */
 abstract class AbstractHttpApi(client: DataDogClient)(implicit formats: Formats, ec: ExecutionContext) {
 
-  protected val NoParams = QueryParams.Empty
+  import Authenticator._
+
+  /**
+   * Executes HTTP POST and converts the result to the specified type.
+   *
+   * @param path    request path.
+   * @param request value to be marshaled into JSON request body.
+   * @param auth    security injector.
+   * @tparam Q request type.
+   * @tparam R response type.
+   * @return future response as R.
+   */
+  protected def apiPost[Q <: AnyRef, R: Manifest](path: String, request: Q, auth: Authenticator = AddQueryParam): Future[R] =
+    client.httpPost[Q, R](path, request, auth)
 
   /**
    * Executes HTTP POST and returns the result as JSON.
    *
    * @param path    request path.
    * @param request value to be marshaled into JSON request body.
+   * @param auth    security injector.
    * @tparam Q request type.
-   * @return future response as JValue.
+   * @return future response as JSON.
    */
-  protected def post[Q <: AnyRef](path: String, request: Q): Future[JValue] = client.httpPost[Q, JValue](path, request)
+  protected def apiPostJ[Q <: AnyRef](path: String, request: Q, auth: Authenticator = AddQueryParam): Future[JValue] =
+    apiPost[Q, JValue](path, request, auth)
 
   /**
-   * Executes HTTP POST and returns the result as a value of provided type.
+   * Executes HTTP PUT and converts the result to the specified type.
    *
-   * @param path      request path.
-   * @param request   value to be marshaled into JSON request body.
-   * @param extractor converts result JSON into a value of provided type.
+   * @param path    request path.
+   * @param request value to be marshaled into JSON request body.
+   * @param auth    security injector.
    * @tparam Q request type.
    * @tparam R response type.
    * @return future response as R.
    */
-  protected def postAndExtract[Q <: AnyRef, R: Manifest](path: String, request: Q, extractor: JValue => R): Future[R] =
-    post(path, request) map extractor
+  protected def apiPut[Q <: AnyRef, R: Manifest](path: String, request: Q, auth: Authenticator = AddHeaders): Future[R] =
+    client.httpPut[Q, R](path, request, auth)
+
+  /**
+   * Executes HTTP PUT and returns the result as JSON.
+   *
+   * @param path    request path.
+   * @param request value to be marshaled into JSON request body.
+   * @param auth    security injector.
+   * @tparam Q request type.
+   * @return future response as JSON.
+   */
+  protected def apiPutJ[Q <: AnyRef](path: String, request: Q, auth: Authenticator = AddHeaders): Future[JValue] =
+    apiPut[Q, JValue](path, request, auth)
+
+  /**
+   * Executes HTTP DELETE and returns the result as JSON.
+   *
+   * @param path request path.
+   * @param auth security injector.
+   * @return future response as R.
+   */
+  protected def apiDeleteJ(path: String, auth: Authenticator = AddHeaders): Future[JValue] =
+    client.httpDelete[JValue](path, auth)
+
+  /**
+   * Executes HTTP GET and converts the result to the specified type.
+   *
+   * @param path   request path.
+   * @param params query parameters.
+   * @tparam R response type.
+   * @return future response as R.
+   */
+  protected def apiGet[R: Manifest](path: String, params: (String, Any)*): Future[R] =
+    client.httpGet[R](path, AddHeaders, params: _*)
+
+  /**
+   * Executes HTTP GET and converts the result to the specified type.
+   *
+   * @param path  request path.
+   * @param query query parameter object.
+   * @tparam R response type.
+   * @return future response as R.
+   */
+  protected def apiGet[R: Manifest](path: String, query: QueryParams): Future[R] = apiGet[R](path, query.toParams: _*)
+
+  /**
+   * Executes HTTP GET and returns the result as JSON.
+   *
+   * @param path   request path.
+   * @param params query parameters.
+   * @return future response as JSON.
+   */
+  protected def apiGetJ(path: String, params: (String, Any)*): Future[JValue] = apiGet[JValue](path, params: _*)
 
   /**
    * Executes HTTP GET and returns the result as JSON.
    *
    * @param path  request path.
-   * @param query value to be marshaled as query parameters.
-   * @return future response as JValue.
+   * @param query query parameter object.
+   * @return future response as JSON.
    */
-  protected def get(path: String, query: QueryParams): Future[JValue] = client.httpGet[JValue](path, query.toParams: _*)
-
-  /**
-   * Executes HTTP GET and returns the result as a value of provided type.
-   *
-   * @param path      request path.
-   * @param query     value to be marshaled as query parameters.
-   * @param extractor converts result JSON into a value of provided type.
-   * @tparam R result type.
-   * @return future response as R.
-   */
-  protected def getAndExtract[R: Manifest](path: String, query: QueryParams, extractor: JValue => R): Future[R] =
-    get(path, query) map extractor
+  protected def apiGetJ(path: String, query: QueryParams): Future[JValue] = apiGetJ(path, query.toParams: _*)
 }

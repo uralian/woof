@@ -5,7 +5,7 @@ import enumeratum._
 /**
  * DataDog site.
  *
- * @param url
+ * @param url DataDog endpoint URL.
  */
 sealed abstract class DataDogSite(val url: String) extends EnumEntry
 
