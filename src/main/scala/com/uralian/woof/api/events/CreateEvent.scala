@@ -21,17 +21,17 @@ import org.json4s.native.Serialization
  * @param relatedEventId related event Id.
  * @param deviceName     device name.
  */
-final case class CreateEventData(title: String,
-                                 text: Option[String] = None,
-                                 dateHappened: Option[Instant] = None,
-                                 priority: Option[Priority] = None,
-                                 host: Option[String] = None,
-                                 tags: List[Tag] = Nil,
-                                 alertType: Option[AlertType] = None,
-                                 aggregationKey: Option[String] = None,
-                                 sourceTypeName: Option[String] = None,
-                                 relatedEventId: Option[Long] = None,
-                                 deviceName: Option[String] = None) {
+final case class CreateEvent(title: String,
+                             text: Option[String] = None,
+                             dateHappened: Option[Instant] = None,
+                             priority: Option[Priority] = None,
+                             host: Option[String] = None,
+                             tags: List[Tag] = Nil,
+                             alertType: Option[AlertType] = None,
+                             aggregationKey: Option[String] = None,
+                             sourceTypeName: Option[String] = None,
+                             relatedEventId: Option[Long] = None,
+                             deviceName: Option[String] = None) {
 
   def withText(text: String) = copy(text = Some(text))
 
@@ -57,10 +57,10 @@ final case class CreateEventData(title: String,
 }
 
 /**
- * Factory for [[CreateEventData]] instances.
+ * Factory for [[CreateEvent]] instances.
  */
-object CreateEventData {
-  val serializer = translateFields[CreateEventData]("dateHappened" -> "date_happened",
+object CreateEvent {
+  val serializer = translateFields[CreateEvent]("dateHappened" -> "date_happened",
     "alertType" -> "alert_type",
     "aggregationKey" -> "aggregation_key",
     "sourceTypeName" -> "source_type_name",

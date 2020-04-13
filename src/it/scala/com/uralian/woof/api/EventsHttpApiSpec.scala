@@ -1,7 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.events.{AlertType, CreateEventData, EventQuery, EventsHttpApi, Priority}
+import com.uralian.woof.api.events.{AlertType, CreateEvent, EventQuery, EventsHttpApi, Priority}
 import com.uralian.woof.http.DataDogClient
 import com.uralian.woof.util.Retry
 
@@ -25,7 +25,7 @@ class EventsHttpApiSpec extends AbstractITSpec {
   "EventsHttpApi" should {
     "create fully specified event in DataDog" in {
       val now = currentTime()
-      val ced = CreateEventData("test")
+      val ced = CreateEvent("test")
         .withText("test event")
         .withDateHappened(now)
         .withPriority(Priority.Normal)
@@ -47,7 +47,7 @@ class EventsHttpApiSpec extends AbstractITSpec {
       eventId = event.id
     }
     "create event with defaults in DataDog" in {
-      val ced = CreateEventData("test")
+      val ced = CreateEvent("test")
       val event = api.create(ced).futureValue
       event.title mustBe "test"
       event.children mustBe empty

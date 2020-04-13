@@ -16,7 +16,7 @@ trait EventsApi {
    * @param data new event data.
    * @return a new event.
    */
-  def create(data: CreateEventData): Future[Event]
+  def create(data: CreateEvent): Future[Event]
 
   /**
    * Retrieves an existing event by ID.
@@ -46,7 +46,7 @@ class EventsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
 
   val path = "v1/events"
 
-  def create(data: CreateEventData): Future[Event] = apiPostJ[CreateEventData](path, data).map { json =>
+  def create(data: CreateEvent): Future[Event] = apiPostJ[CreateEvent](path, data).map { json =>
     val event = (json \ "event").extract[Event]
     val status = (json \ "status").extract[String]
     event -> status

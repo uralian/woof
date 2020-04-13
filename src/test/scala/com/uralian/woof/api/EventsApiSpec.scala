@@ -3,22 +3,19 @@ package com.uralian.woof.api
 import java.time.Instant
 
 import com.uralian.woof.AbstractUnitSpec
-import com.uralian.woof.api.events.{AlertType, ChildEvent, CreateEventData, Event, EventQuery, Priority}
-import com.uralian.woof.util.JsonUtils
+import com.uralian.woof.api.events._
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.Serialization
 
 /**
- * CreateEventData test suite.
+ * EventsApi test suite.
  */
-class EventsSpec extends AbstractUnitSpec with JsonUtils {
+class EventsApiSpec extends AbstractUnitSpec {
 
-  import events.eventFormats
-
-  "CreateEventData" should {
+  "CreateEvent" should {
     val now = currentTime()
-    val ced = CreateEventData("test")
+    val request = CreateEvent("test")
       .withText("test event")
       .withDateHappened(now)
       .withPriority(Priority.Normal)
@@ -30,14 +27,14 @@ class EventsSpec extends AbstractUnitSpec with JsonUtils {
       .withRelatedEventId(12345)
       .withDeviceName("sandbox")
     "produce valid payload" in {
-      val json = Extraction.decompose(ced)
+      val json = Extraction.decompose(request)
       json mustBe ("title" -> "test") ~ ("text" -> "test event") ~ ("date_happened" -> JLong(now.getEpochSecond)) ~
         ("priority" -> "normal") ~ ("host" -> "localhost") ~ ("tags" -> List("a:aa", "b:bb")) ~
         ("alert_type" -> "warning") ~ ("aggregation_key" -> "abcde") ~ ("source_type_name" -> "Jenkins") ~
         ("related_event_id" -> 12345) ~ ("device_name" -> "sandbox")
     }
     "render toString as JSON" in {
-      Serialization.read[CreateEventData](ced.toString) mustBe ced
+      Serialization.read[CreateEvent](request.toString) mustBe request
     }
   }
 

@@ -12,6 +12,6 @@ package object events {
     Json4s.serializer(AlertType) +
     Event.serializer +
     ChildEvent.serializer +
-    CreateEventData.serializer +
+    CreateEvent.serializer +
     EventQuery.serializer
 }
