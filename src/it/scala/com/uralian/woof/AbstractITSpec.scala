@@ -1,9 +1,12 @@
 package com.uralian.woof
 
+import com.typesafe.config.ConfigFactory
+import com.uralian.woof.api.Tag
 import org.scalatest._
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.{Millis, Seconds, Span}
 
+import scala.collection.JavaConverters._
 import scala.util.Random
 
 /**
@@ -16,6 +19,11 @@ abstract class AbstractITSpec extends Suite
   with OptionValues
   with ScalaFutures
   with Inside {
+
+  /* test configuration */
+  val config = ConfigFactory.load("integration.conf")
+  val host = config.getString("host.name")
+  val defaultTags = config.getStringList("host.tags").asScala.map(Tag.apply).toSet
 
   /**
    * Default timeout for Future testing.
