@@ -8,7 +8,7 @@ import org.json4s.DefaultFormats
  */
 package object api {
 
-  val apiFormats = DefaultFormats ++ JsonUtils.commonSerializers + Tag.serializer
+  val apiFormats = DefaultFormats.withBigDecimal ++ JsonUtils.commonSerializers + Tag.serializer
 
   /**
    * Implicitly converts a tuple (String, String) into a DataDog Tag.

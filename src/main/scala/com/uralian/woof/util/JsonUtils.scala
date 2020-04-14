@@ -5,6 +5,8 @@ import java.time.Instant
 
 import org.json4s._
 
+import scala.concurrent.duration._
+
 /**
  * JSON helper methods.
  */
@@ -66,6 +68,20 @@ trait JsonUtils {
     case t: Instant => JLong(t.getEpochSecond)
   }))
 
+  val instantSerializerAsMillis = new CustomSerializer[Instant](_ => ( {
+    case JLong(num) => Instant.ofEpochMilli(num)
+    case JInt(num)  => Instant.ofEpochMilli(num.toLong)
+  }, {
+    case t: Instant => JLong(t.toEpochMilli)
+  }))
+
+  val durationSerializerAsSeconds = new CustomSerializer[Duration](_ => ( {
+    case JLong(num) => num seconds
+    case JInt(num)  => num.toLong seconds
+  }, {
+    case d: Duration => JLong(d.toSeconds)
+  }))
+
   val urlSerializer = new CustomSerializer[URL](_ => ( {
     case JString(str) => new URL(str)
   }, {
@@ -77,5 +93,8 @@ trait JsonUtils {
  * A singleton for JSON helper methods.
  */
 object JsonUtils extends JsonUtils {
-  val commonSerializers = List(instantSerializerAsSeconds, urlSerializer)
+  /**
+   * Include serializers for common types; java.time.Instant is serialized as seconds.
+   */
+  val commonSerializers = List(instantSerializerAsSeconds, durationSerializerAsSeconds, urlSerializer)
 }

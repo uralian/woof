@@ -70,7 +70,6 @@ class EventsHttpApiSpec extends AbstractITSpec {
       val to = currentTime().plusSeconds(3600 * 10)
       val query = EventQuery(from, to).withTags(ddTags: _*).noAggregation
       val events = Retry.retryFuture(5, 5 seconds)(() => api.query(query)).futureValue
-      events.size mustBe 1
       val event = events.head
       event.id mustBe eventId
       event.title mustBe "test"
