@@ -3,7 +3,7 @@ package com.uralian.woof.api.events
 import java.time.Instant
 
 import com.uralian.woof.api._
-import com.uralian.woof.util.JsonUtils._
+import com.uralian.woof.util.JsonUtils
 import org.json4s.FieldSerializer
 
 /**
@@ -34,15 +34,15 @@ final case class EventQuery(start: Instant, end: Instant,
 /**
  * Factory for [[EventQuery]] instances.
  */
-object EventQuery {
+object EventQuery extends JsonUtils {
 
-  val fixTags: FSer = {
-    case ("tags", tags: Seq[_]) => Some("tags" -> tags.map(_.toString).mkString(",")).filterNot(_._2.isEmpty)
+  private val serTags: FSer = {
+    case ("tags", tags: Seq[_]) => Some("tags" -> encodeTags(tags.asInstanceOf[Seq[Tag]])).filterNot(_._2.isEmpty)
   }
 
-  val fixSources: FSer = {
-    case ("sources", srcs: Seq[_]) => Some("sources" -> srcs.mkString(",")).filterNot(_._2.isEmpty)
+  private val serSources: FSer = {
+    case ("sources", sources: Seq[_]) => Some("sources" -> sources.mkString(",")).filterNot(_._2.isEmpty)
   }
 
-  val serializer = FieldSerializer[EventQuery](serializer = combine(fixTags, fixSources))
+  val serializer = FieldSerializer[EventQuery](serializer = combine(serTags, serSources))
 }

@@ -40,7 +40,7 @@ object Tag {
   /**
    * Tag JSON serializer.
    */
-  val serializer = new CustomSerializer[Tag](_ => ( {
+  val serializer: CustomSerializer[Tag] = new CustomSerializer[Tag](_ => ( {
     case JString(str) => Tag(str)
   }, {
     case tag: Tag => JString(tag.toString)

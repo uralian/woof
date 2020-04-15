@@ -69,7 +69,7 @@ class JsonUtilsSpec extends AbstractUnitSpec {
 
   "instantSerializerAsSeconds" should {
     implicit val formats = DefaultFormats + instantSerializerAsSeconds
-    val seconds = System.currentTimeMillis()
+    val seconds = System.currentTimeMillis() / 1000
     "translate java.time.Instant to JSON as number of seconds since Epoch" in {
       val time = java.time.Instant.ofEpochSecond(seconds)
       val json = Extraction.decompose(time)
@@ -84,6 +84,26 @@ class JsonUtilsSpec extends AbstractUnitSpec {
       val json: JValue = JLong(seconds)
       val time = json.extract[java.time.Instant]
       time.getEpochSecond mustBe seconds
+    }
+  }
+
+  "instantSerializerAsMillis" should {
+    implicit val formats = DefaultFormats + instantSerializerAsMillis
+    val millis = System.currentTimeMillis()
+    "translate java.time.Instant to JSON as number of milliseconds since Epoch" in {
+      val time = java.time.Instant.ofEpochMilli(millis)
+      val json = Extraction.decompose(time)
+      json mustBe JLong(millis)
+    }
+    "translate number of milliseconds as BigInt since epoch into java.time.Instant" in {
+      val json: JValue = JInt(millis)
+      val time = json.extract[java.time.Instant]
+      time.toEpochMilli mustBe millis
+    }
+    "translate number of milliseconds as Long since epoch into java.time.Instant" in {
+      val json: JValue = JLong(millis)
+      val time = json.extract[java.time.Instant]
+      time.toEpochMilli mustBe millis
     }
   }
 

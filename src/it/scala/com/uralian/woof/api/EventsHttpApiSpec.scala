@@ -1,7 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.events.{AlertType, CreateEventData, EventQuery, EventsHttpApi, Priority}
+import com.uralian.woof.api.events.{AlertType, CreateEvent, EventQuery, EventsApi, EventsHttpApi, Priority}
 import com.uralian.woof.http.DataDogClient
 import com.uralian.woof.util.Retry
 
@@ -16,7 +16,7 @@ class EventsHttpApiSpec extends AbstractITSpec {
   implicit val serialization = org.json4s.native.Serialization
 
   val client = DataDogClient()
-  val api = new EventsHttpApi(client)
+  val api: EventsApi = new EventsHttpApi(client)
 
   val ddTags = List[Tag]("testA" -> randomString(), "testB" -> randomString())
 
@@ -25,7 +25,7 @@ class EventsHttpApiSpec extends AbstractITSpec {
   "EventsHttpApi" should {
     "create fully specified event in DataDog" in {
       val now = currentTime()
-      val ced = CreateEventData("test")
+      val ced = CreateEvent("test")
         .withText("test event")
         .withDateHappened(now)
         .withPriority(Priority.Normal)
@@ -47,7 +47,7 @@ class EventsHttpApiSpec extends AbstractITSpec {
       eventId = event.id
     }
     "create event with defaults in DataDog" in {
-      val ced = CreateEventData("test")
+      val ced = CreateEvent("test")
       val event = api.create(ced).futureValue
       event.title mustBe "test"
       event.children mustBe empty
@@ -70,7 +70,6 @@ class EventsHttpApiSpec extends AbstractITSpec {
       val to = currentTime().plusSeconds(3600 * 10)
       val query = EventQuery(from, to).withTags(ddTags: _*).noAggregation
       val events = Retry.retryFuture(5, 5 seconds)(() => api.query(query)).futureValue
-      events.size mustBe 1
       val event = events.head
       event.id mustBe eventId
       event.title mustBe "test"

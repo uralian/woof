@@ -1,11 +1,9 @@
 package com.uralian.woof.api
 
-import com.typesafe.config.ConfigFactory
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.tags.TagsHttpApi
+import com.uralian.woof.api.tags.{TagsApi, TagsHttpApi}
 import com.uralian.woof.http.DataDogClient
 
-import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
@@ -13,14 +11,10 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class TagsHttpApiSpec extends AbstractITSpec {
 
-  val config = ConfigFactory.load("integration.conf").getConfig("tags")
-  val host = config.getString("host.name")
-  val defaultTags = config.getStringList("host.tags").asScala.map(Tag.apply).toSet
-
   implicit val serialization = org.json4s.native.Serialization
 
   val client = DataDogClient()
-  val api = new TagsHttpApi(client)
+  val api: TagsApi = new TagsHttpApi(client)
 
   "TagsHttpApi" should {
     "retrieve all infrastructure tags" in {

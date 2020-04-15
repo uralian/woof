@@ -4,8 +4,8 @@ import java.net.URL
 
 import com.uralian.woof.api.DataDogApiError
 import grizzled.slf4j.Logging
-import org.json4s.Formats
 import org.json4s.native.Serialization
+import org.json4s.{Formats, MappingException}
 import sttp.client._
 import sttp.client.asynchttpclient.future.AsyncHttpClientFutureBackend
 import sttp.client.json4s._
@@ -162,8 +162,9 @@ class DataDogClient(apiKey: String,
    * @return
    */
   private def translateResponse[R: Manifest](rsp: Response[Either[ResponseError[Exception], R]]): R = rsp match {
-    case Response(Right(body), _, _, _, _)       => body
-    case Response(Left(error), code, text, _, _) => throw new DataDogApiError(code.code, text, error)
+    case Response(Right(body), _, _, _, _)                                        => body
+    case Response(Left(DeserializationError(_, e: MappingException)), _, _, _, _) => throw e
+    case Response(Left(error), code, text, _, _)                                  => throw new DataDogApiError(code.code, text, error)
   }
 }
 

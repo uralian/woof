@@ -1,8 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractUnitSpec
-import org.json4s.JsonAST.JString
-import org.json4s.{DefaultFormats, Extraction, MappingException}
+import org.json4s.{DefaultFormats, Extraction, JString, MappingException}
 
 /**
  * Tag test suite.
@@ -43,6 +42,20 @@ class TagSpec extends AbstractUnitSpec {
       val tag: Tag = "aBc" -> "XYZ"
       tag.name mustBe "abc"
       tag.value mustBe "xyz"
+    }
+  }
+
+  "encodeTags" should {
+    "convert a list of tags into a string" in {
+      val tags = List[Tag]("a" -> "a1", "b" -> "b2", "c" -> "c3")
+      encodeTags(tags) mustBe "a:a1,b:b2,c:c3"
+    }
+  }
+
+  "decodeTags" should {
+    "convert a string into a list of tags" in {
+      val str = "a:a1,b:b2,c:c3"
+      decodeTags(str) mustBe List[Tag]("a" -> "a1", "b" -> "b2", "c" -> "c3")
     }
   }
 }
