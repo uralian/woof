@@ -1,7 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.events.{AlertType, CreateEvent, EventQuery, EventsHttpApi, Priority}
+import com.uralian.woof.api.events.{AlertType, CreateEvent, EventQuery, EventsApi, EventsHttpApi, Priority}
 import com.uralian.woof.http.DataDogClient
 import com.uralian.woof.util.Retry
 
@@ -16,7 +16,7 @@ class EventsHttpApiSpec extends AbstractITSpec {
   implicit val serialization = org.json4s.native.Serialization
 
   val client = DataDogClient()
-  val api = new EventsHttpApi(client)
+  val api: EventsApi = new EventsHttpApi(client)
 
   val ddTags = List[Tag]("testA" -> randomString(), "testB" -> randomString())
 
