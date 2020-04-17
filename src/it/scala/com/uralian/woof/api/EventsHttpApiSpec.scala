@@ -66,8 +66,8 @@ class EventsHttpApiSpec extends AbstractITSpec {
     }
     "query event stream in DataDog by tags and time frame" in {
       Thread.sleep(5000)
-      val from = currentTime().minusSeconds(3600 * 10)
-      val to = currentTime().plusSeconds(3600 * 10)
+      val from = currentTime().minusSeconds(3600)
+      val to = currentTime().plusSeconds(3600)
       val query = EventQuery(from, to).withTags(ddTags: _*).noAggregation
       val events = Retry.retryFuture(5, 5 seconds)(() => api.query(query)).futureValue
       val event = events.head

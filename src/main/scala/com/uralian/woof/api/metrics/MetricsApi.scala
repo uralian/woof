@@ -17,7 +17,7 @@ trait MetricsApi {
    *
    * @param from moment in time to search for metrics from.
    * @param host if specified, only metrics for the given host are searched.
-   * @return
+   * @return a list of active metrics.
    */
   def getActiveMetrics(from: Instant, host: Option[String] = None): Future[Seq[String]]
 
