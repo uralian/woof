@@ -1,7 +1,7 @@
 // general project attributes
 organization in ThisBuild := "com.uralian"
 organizationName in ThisBuild := "Uralian"
-version in ThisBuild := "0.1.0"
+version in ThisBuild := "0.1.0-SNAPSHOT"
 
 scalaVersion in ThisBuild := "2.12.8"
 
@@ -16,7 +16,7 @@ scalacOptions in ThisBuild ++= Seq(
   "-target:jvm-1.8",
   "-encoding", "UTF-8"
 )
-ThisBuild / scalacOptions in(Compile, doc) ++= Seq("-no-link-warnings")
+scalacOptions in(ThisBuild, Compile, doc) ++= Seq("-no-link-warnings")
 
 // scoverage options
 coverageHighlighting in ThisBuild := true
