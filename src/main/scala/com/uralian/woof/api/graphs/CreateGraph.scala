@@ -1,11 +1,11 @@
-package com.uralian.woof.api.embed
+package com.uralian.woof.api.graphs
 
 import com.uralian.woof.util.JsonUtils
 import org.json4s.FieldSerializer
 import org.json4s.native.Serialization
 
 /**
- * Request to create an embeddable graph.
+ * Request to create a live embeddable graph.
  *
  * @param queries   a list of queries.
  * @param timeframe graph timeframe.
@@ -13,7 +13,7 @@ import org.json4s.native.Serialization
  * @param legend    turns on/off the legend.
  * @param title     graph title.
  */
-final case class CreateEmbed(queries: Seq[String],
+final case class CreateGraph(queries: Seq[String],
                              timeframe: Timeframe = Timeframe.Default,
                              size: GraphSize = GraphSize.Default,
                              legend: Boolean = false,
@@ -33,13 +33,15 @@ final case class CreateEmbed(queries: Seq[String],
 }
 
 /**
- * Provides JSON serializer for [[CreateEmbed]] instances.
+ * Provides JSON serializer for [[CreateGraph]] instances.
  */
-object CreateEmbed extends JsonUtils {
+object CreateGraph extends JsonUtils {
 
   private val serRequests: FSer = {
     case ("queries", queries: Seq[_]) =>
-      val data = Map("viz" -> "timeseries", "events" -> Nil, "requests" -> queries.map(r => Map("q" -> r.toString)))
+      val data = Map("viz" -> "timeseries", "events" -> Nil, "requests" -> queries.map { r =>
+        Map("q" -> r.toString, "type" -> "line", "metadata" -> Map(r.toString -> "alias?"))
+      })
       Some("graph_json" -> Serialization.write(data))
   }
 
@@ -47,13 +49,13 @@ object CreateEmbed extends JsonUtils {
     case ("legend", flag: Boolean) => Some("legend" -> (if (flag) "yes" else "no"))
   }
 
-  val serializer = FieldSerializer[CreateEmbed](serializer = combine(serLegend, serRequests))
+  val serializer = FieldSerializer[CreateGraph](serializer = combine(serLegend, serRequests))
 
   /**
-   * Creates a new [[CreateEmbed]] instance.
+   * Creates a new [[CreateGraph]] instance.
    *
    * @param queries queries to run.
-   * @return a new [[CreateEmbed]] instance.
+   * @return a new [[CreateGraph]] instance.
    */
-  def apply(queries: String*): CreateEmbed = new CreateEmbed(queries)
+  def apply(queries: String*): CreateGraph = new CreateGraph(queries)
 }

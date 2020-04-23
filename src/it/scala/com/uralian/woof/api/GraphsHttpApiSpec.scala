@@ -1,27 +1,27 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.embed.GraphSize.{Medium, Small, XLarge}
-import com.uralian.woof.api.embed._
+import com.uralian.woof.api.graphs.GraphSize.{Medium, Small, XLarge}
+import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
- * Embeds API test suite.
+ * Graphs API test suite.
  */
-class EmbedsHttpApiSpec extends AbstractITSpec {
+class GraphsHttpApiSpec extends AbstractITSpec {
 
   implicit val serialization = org.json4s.native.Serialization
 
   val client = DataDogClient()
-  val api: EmbedsApi = new EmbedsHttpApi(client)
+  val api: GraphsApi = new GraphsHttpApi(client)
 
-  var embedIds: List[String] = Nil
+  var graphIds: List[String] = Nil
 
-  "EmbedsHttpApi" should {
+  "GraphsHttpApi" should {
     "create a single query graph" in {
-      val request = CreateEmbed("avg:system.cpu.user{*}")
+      val request = CreateGraph("avg:system.cpu.user{*}")
         .withTitle("Sample Graph")
         .withTimeframe(Timeframe.Hour4)
         .withSize(XLarge)
@@ -32,10 +32,10 @@ class EmbedsHttpApiSpec extends AbstractITSpec {
       rsp.html must (include("legend=true") and include("""width="1000""""))
       rsp.title mustBe "Sample Graph"
       rsp.revoked mustBe false
-      embedIds +:= rsp.id
+      graphIds +:= rsp.id
     }
     "create a multi-query graph" in {
-      val request = CreateEmbed("avg:system.cpu.user{*}")
+      val request = CreateGraph("avg:system.cpu.user{*}")
         .withQueries("avg:system.cpu.idle{*}", "avg:system.cpu.system{*}")
         .withTitle("Sample Graph")
         .withTimeframe(Timeframe.Hour1)
@@ -46,10 +46,10 @@ class EmbedsHttpApiSpec extends AbstractITSpec {
       rsp.html must (not include ("legend=true") and include("""width="400""""))
       rsp.title mustBe "Sample Graph"
       rsp.revoked mustBe false
-      embedIds +:= rsp.id
+      graphIds +:= rsp.id
     }
     "create a stack graph" in {
-      val request = CreateEmbed("avg:system.cpu.user{*}, avg:system.cpu.system{*}")
+      val request = CreateGraph("avg:system.cpu.user{*}, avg:system.cpu.system{*}")
         .withTitle("Sample Graph")
         .withTimeframe(Timeframe.Hour1)
         .withSize(Medium)
@@ -59,10 +59,10 @@ class EmbedsHttpApiSpec extends AbstractITSpec {
       rsp.html must (not include ("legend=true") and include("""width="600""""))
       rsp.title mustBe "Sample Graph"
       rsp.revoked mustBe false
-      embedIds +:= rsp.id
+      graphIds +:= rsp.id
     }
     "create a graph with variables" in {
-      val request = CreateEmbed("avg:system.cpu.user{$var}")
+      val request = CreateGraph("avg:system.cpu.user{$var}")
         .withTitle("Sample Graph")
         .withTimeframe(Timeframe.Hour4)
         .withSize(XLarge)
@@ -73,11 +73,11 @@ class EmbedsHttpApiSpec extends AbstractITSpec {
       rsp.html must (include("legend=true") and include("""width="1000""""))
       rsp.title mustBe "Sample Graph"
       rsp.revoked mustBe false
-      embedIds +:= rsp.id
+      graphIds +:= rsp.id
     }
     "retrieve a graph for valid id" in {
-      val graph = api.get(embedIds.head).futureValue
-      graph.id mustBe embedIds.head
+      val graph = api.get(graphIds.head).futureValue
+      graph.id mustBe graphIds.head
       graph.revoked mustBe false
     }
     "fail to retrieve a graph for invalid id" in {
@@ -86,13 +86,13 @@ class EmbedsHttpApiSpec extends AbstractITSpec {
     "retrieve all graphs" in {
       val graphs = api.getAll.futureValue
       graphs.size must be >= 4
-      graphs.map(_.id) must contain allElementsOf (embedIds)
+      graphs.map(_.id) must contain allElementsOf (graphIds)
     }
     "enable graphs" in {
-      api.enable(embedIds.head).futureValue mustBe true
+      api.enable(graphIds.head).futureValue mustBe true
     }
     "revoke graphs" in {
-      embedIds map api.revoke foreach { rsp =>
+      graphIds map api.revoke foreach { rsp =>
         rsp.futureValue mustBe true
       }
     }

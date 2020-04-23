@@ -1,9 +1,9 @@
-package com.uralian.woof.api.embed
+package com.uralian.woof.api.graphs
 
 import enumeratum.{Enum, EnumEntry}
 
 /**
- * Graph timeframe.
+ * Live graph timeframe.
  *
  * @param entryName
  */

@@ -3,13 +3,13 @@ package com.uralian.woof.api
 import enumeratum.Json4s
 
 /**
- * Helper methods and types for Embeds API.
+ * Helper methods and types for Graphs API.
  */
-package object embed {
+package object graphs {
 
   implicit val metricFormats = apiFormats +
     Json4s.serializer(Timeframe) +
     Json4s.serializer(GraphSize) +
-    Embed.serializer +
-    CreateEmbed.serializer
+    Graph.serializer +
+    CreateGraph.serializer
 }
