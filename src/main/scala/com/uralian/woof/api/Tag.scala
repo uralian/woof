@@ -1,5 +1,6 @@
 package com.uralian.woof.api
 
+import com.uralian.woof.api.Tag._
 import org.json4s._
 
 /**
@@ -9,6 +10,10 @@ import org.json4s._
  * @param value tag value.
  */
 final case class Tag private(name: String, value: String) {
+  require(isValidName(name), "invalid tag name")
+  require(isValidValue(value), "invalid tag value")
+  require(name.size + value.size <= 200, "tag size too long")
+
   override val toString: String = name + ":" + value
 }
 
@@ -16,6 +21,26 @@ final case class Tag private(name: String, value: String) {
  * Tag instance factory.
  */
 object Tag {
+
+  private val nameRegex = """[a-z0-9_\-\./]+""".r
+
+  private val valueRegex = """[a-z0-9:_\-\./]+""".r
+
+  /**
+   * Tests if the string is a valid tag name.
+   *
+   * @param str string to check.
+   * @return `true` if the argument is a valid tag name.
+   */
+  def isValidName(str: String) = nameRegex.pattern.matcher(str).matches
+
+  /**
+   * Tests if the string is a valid tag value.
+   *
+   * @param str string to check.
+   * @return `true` if the argument is a valid tag value.
+   */
+  def isValidValue(str: String) = valueRegex.pattern.matcher(str).matches
 
   /**
    * Creates a new Tag instance converting the name and value into lowercase.
@@ -32,9 +57,8 @@ object Tag {
    * @param str string in the format "name:value".
    * @return a new Tag.
    */
-  def apply(str: String): Tag = {
-    val Array(name, value) = str.split(':')
-    Tag(name, value)
+  def apply(str: String): Tag = str.split(':').toList match {
+    case head :: tail => Tag(head, tail.mkString(":"))
   }
 
   /**
