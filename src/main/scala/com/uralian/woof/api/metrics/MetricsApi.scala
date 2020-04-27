@@ -2,7 +2,7 @@ package com.uralian.woof.api.metrics
 
 import java.time.Instant
 
-import com.uralian.woof.api.AbstractHttpApi
+import com.uralian.woof.api.{AbstractHttpApi, MetricQuery}
 import com.uralian.woof.http.DataDogClient
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -62,7 +62,7 @@ trait MetricsApi {
    * @param to    the end time.
    * @return a list of timeseries.
    */
-  def querySeries(query: String, from: Instant, to: Instant = Instant.now): Future[Seq[Timeseries]]
+  def querySeries(query: MetricQuery, from: Instant, to: Instant = Instant.now): Future[Seq[Timeseries]]
 }
 
 /**
@@ -100,8 +100,8 @@ class MetricsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
     }
   }
 
-  def querySeries(query: String, from: Instant, to: Instant = Instant.now): Future[Seq[Timeseries]] = apiGetJ(queryPath,
-    "query" -> query, "from" -> from.getEpochSecond, "to" -> to.getEpochSecond) map { json =>
+  def querySeries(query: MetricQuery, from: Instant, to: Instant = Instant.now): Future[Seq[Timeseries]] = apiGetJ(queryPath,
+    "query" -> query.q, "from" -> from.getEpochSecond, "to" -> to.getEpochSecond) map { json =>
     (json \ "series").extract[Seq[Timeseries]]
   }
 }

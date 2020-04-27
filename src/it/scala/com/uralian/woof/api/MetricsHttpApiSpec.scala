@@ -19,7 +19,6 @@ class MetricsHttpApiSpec extends AbstractITSpec {
   val api: MetricsApi = new MetricsHttpApi(client)
 
   val ddTags = List[Tag]("xx" -> randomString(), "yy" -> randomString())
-  val ddFilter = Scope.Filter(ddTags: _*)
 
   "MetricsHttpApi" should {
     "post a new metric series" in {
@@ -35,7 +34,10 @@ class MetricsHttpApiSpec extends AbstractITSpec {
     }
     "query metric series" in {
       Thread.sleep(30000)
-      val query = s"max:woof.test.metric{${ddFilter}}by{host}"
+      val query = MetricQuery.metric("woof.test.metric")
+        .aggregate(MetricAggregator.Max)
+        .filterBy(ddTags: _*)
+        .groupBy("host")
       val rsp = api.querySeries(query, currentTime() minusSeconds 3600, currentTime() plusSeconds 3600).futureValue
       val ts = rsp.headOption.value
       val allTags: Seq[Tag] = ("host" -> host) :: ddTags

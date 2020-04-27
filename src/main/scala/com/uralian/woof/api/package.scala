@@ -1,5 +1,6 @@
 package com.uralian.woof
 
+import com.uralian.woof.api.MetricQuery.FreeformQuery
 import com.uralian.woof.util.JsonUtils
 import org.json4s.DefaultFormats
 
@@ -31,7 +32,15 @@ package object api {
    * }}}
    *
    * @param str
-   * @return
+   * @return a new scope element.
    */
   implicit def stringToScopeElement(str: String): ScopeElement = ScopeElement(str)
+
+  /**
+   * Implicitly converts a string into a freeform query.
+   *
+   * @param str query text.
+   * @return a new freeform metric query.
+   */
+  implicit def stringToMetricQuery(str: String): FreeformQuery = MetricQuery.text(str)
 }
