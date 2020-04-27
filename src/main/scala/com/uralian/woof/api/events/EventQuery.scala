@@ -37,7 +37,7 @@ final case class EventQuery(start: Instant, end: Instant,
 object EventQuery extends JsonUtils {
 
   private val serTags: FSer = {
-    case ("tags", tags: Seq[_]) => Some("tags" -> encodeTags(tags.asInstanceOf[Seq[Tag]])).filterNot(_._2.isEmpty)
+    case ("tags", tags: Seq[_]) => Some("tags" -> tags.mkString(",")).filterNot(_._2.isEmpty)
   }
 
   private val serSources: FSer = {

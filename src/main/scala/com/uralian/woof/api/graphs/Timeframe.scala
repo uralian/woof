@@ -5,7 +5,7 @@ import enumeratum.{Enum, EnumEntry}
 /**
  * Live graph timeframe.
  *
- * @param entryName
+ * @param entryName entry name.
  */
 sealed abstract class Timeframe(override val entryName: String) extends EnumEntry
 

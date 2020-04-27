@@ -8,7 +8,11 @@ import org.json4s.DefaultFormats
  */
 package object api {
 
-  val apiFormats = DefaultFormats.withBigDecimal ++ JsonUtils.commonSerializers + Tag.serializer
+  /**
+   * JSON formats.
+   */
+  val apiFormats = DefaultFormats.withBigDecimal ++ JsonUtils.commonSerializers +
+    ScopeElement.serializer + Tag.serializer + TagName.serializer + VarName.serializer + Scope.serializer
 
   /**
    * Implicitly converts a tuple (String, String) into a DataDog Tag.
@@ -19,18 +23,15 @@ package object api {
   implicit def pairToTag(pair: (String, String)): Tag = Tag(pair._1, pair._2)
 
   /**
-   * Encodes a list of tags as a comma separated string.
+   * Implicitly converts a string into a ScopeElement:
+   * {{{
+   * "key:value" -> Tag(key, value)
+   * "name" -> TagName(name)
+   * "$name" -> VarName(name)
+   * }}}
    *
-   * @param tags tags to encode.
-   * @return string in the format "key1:value1,key2:value2,..."
+   * @param str
+   * @return
    */
-  def encodeTags(tags: Seq[Tag]): String = tags.map(_.toString).mkString(",")
-
-  /**
-   * Decodes a list of tags from a string.
-   *
-   * @param str string in the format "key1:value1,key2:value2,..."
-   * @return a list of tags.
-   */
-  def decodeTags(str: String): Seq[Tag] = str.split(",").map(Tag.apply).toSeq
+  implicit def stringToScopeElement(str: String): ScopeElement = ScopeElement(str)
 }

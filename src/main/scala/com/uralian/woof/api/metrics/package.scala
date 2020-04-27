@@ -20,7 +20,6 @@ package object metrics {
   implicit val metricFormats = apiFormats +
     Json4s.serializer(MetricType) +
     UnitInfo.serializer +
-    Scope.serializer +
     Point.serializer +
     Timeseries.serializer +
     MetricScale.serializer +

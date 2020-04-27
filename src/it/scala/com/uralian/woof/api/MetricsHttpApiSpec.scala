@@ -1,7 +1,6 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.metrics.Scope.TagSet
 import com.uralian.woof.api.metrics._
 import com.uralian.woof.http.DataDogClient
 
@@ -20,6 +19,7 @@ class MetricsHttpApiSpec extends AbstractITSpec {
   val api: MetricsApi = new MetricsHttpApi(client)
 
   val ddTags = List[Tag]("xx" -> randomString(), "yy" -> randomString())
+  val ddFilter = Scope.Filter(ddTags: _*)
 
   "MetricsHttpApi" should {
     "post a new metric series" in {
@@ -35,15 +35,16 @@ class MetricsHttpApiSpec extends AbstractITSpec {
     }
     "query metric series" in {
       Thread.sleep(30000)
-      val query = s"max:woof.test.metric{${encodeTags(ddTags)}}by{host}"
+      val query = s"max:woof.test.metric{${ddFilter}}by{host}"
       val rsp = api.querySeries(query, currentTime() minusSeconds 3600, currentTime() plusSeconds 3600).futureValue
       val ts = rsp.headOption.value
       val allTags: Seq[Tag] = ("host" -> host) :: ddTags
       ts.metric mustBe "woof.test.metric"
       ts.tags mustBe Seq[Tag]("host" -> "uralian.test.host")
       ts.aggregation mustBe "max"
-      ts.scope mustBe TagSet(allTags)
-      ts.expression mustBe s"max:woof.test.metric{${encodeTags(allTags)}}"
+      inside(ts.scope) {
+        case Scope.Filter(elements @ _*) => elements.toSet mustBe allTags.toSet
+      }
       ts.displayName mustBe "woof.test.metric"
     }
     "retrieve all active metrics" in {
