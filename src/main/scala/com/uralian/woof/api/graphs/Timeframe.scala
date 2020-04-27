@@ -1,11 +1,11 @@
-package com.uralian.woof.api.embed
+package com.uralian.woof.api.graphs
 
 import enumeratum.{Enum, EnumEntry}
 
 /**
- * Graph timeframe.
+ * Live graph timeframe.
  *
- * @param entryName
+ * @param entryName entry name.
  */
 sealed abstract class Timeframe(override val entryName: String) extends EnumEntry
 

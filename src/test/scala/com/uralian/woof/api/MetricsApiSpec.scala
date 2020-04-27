@@ -4,7 +4,6 @@ import java.time.Instant
 
 import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.metrics.MetricScale.{CountScale, GaugeScale, RateScale}
-import com.uralian.woof.api.metrics.Scope.TagSet
 import com.uralian.woof.api.metrics._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -79,21 +78,6 @@ class MetricsApiSpec extends AbstractUnitSpec {
       Extraction.decompose(CountScale(Some(30 seconds))) mustBe ("type" -> "count") ~ ("interval" -> JLong(30))
       Extraction.decompose(RateScale(None)) mustBe ("type" -> "rate") ~ ("interval" -> JNothing)
       Extraction.decompose(GaugeScale) mustBe JObject("type" -> JString("gauge"))
-    }
-  }
-
-  "Scope" should {
-    "construct from a string" in {
-      Scope("*") mustBe Scope.All
-      Scope("a:aa,b:bb,c:cc") mustBe Scope.TagSet(Seq("a" -> "aa", "b" -> "bb", "c" -> "cc"))
-    }
-    "serialize to JSON" in {
-      Extraction.decompose(Scope.All) mustBe JString("*")
-      Extraction.decompose(Scope.TagSet(Seq("a" -> "aa", "b" -> "bb"))) mustBe JString("a:aa,b:bb")
-    }
-    "deserialize from JSON" in {
-      JString("*").extract[Scope] mustBe Scope.All
-      JString("a:aa,b:bb").extract[Scope] mustBe Scope.TagSet(Seq("a" -> "aa", "b" -> "bb"))
     }
   }
 
@@ -172,7 +156,7 @@ class MetricsApiSpec extends AbstractUnitSpec {
         Instant.ofEpochMilli(1586779200000L),
         Instant.ofEpochMilli(1586822399000L),
         43200 seconds, Seq("host" -> "uralian.test.host"), 1, 0, "avg",
-        TagSet(Seq("host" -> "uralian.test.host")),
+        Scope.Filter("host" -> "uralian.test.host"),
         Seq(Instant.ofEpochMilli(1586779200000L) -> 10.535000006357828),
         "avg:woof.test.metric{host:uralian.test.host}",
         Seq(UnitInfo("general", 1.0, "operation", "op", "operations", 57)),

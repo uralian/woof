@@ -3,7 +3,7 @@ package com.uralian.woof.api.hosts
 import java.time._
 
 import com.uralian.woof.api.hosts.HostQuery._
-import com.uralian.woof.api.{QueryParams, Tag}
+import com.uralian.woof.api.{QueryParams, SortDirection, Tag}
 import com.uralian.woof.util.JsonUtils._
 
 /**
@@ -18,7 +18,7 @@ import com.uralian.woof.util.JsonUtils._
  */
 final case class HostQuery(filter: Option[String] = None,
                            sortField: SortField = SortField.Default,
-                           sortDirection: SortDirection = SortDirection.Default,
+                           sortDirection: SortDirection = SortDirection.Ascending,
                            start: Int = 0,
                            count: Int = DefaultCount,
                            from: Instant = Instant.now minus DefaultTimeSpan) extends QueryParams {

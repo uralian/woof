@@ -1,4 +1,4 @@
-package com.uralian.woof.api.hosts
+package com.uralian.woof.api
 
 import enumeratum._
 
@@ -17,8 +17,6 @@ object SortDirection extends Enum[SortDirection] {
   case object Ascending extends SortDirection("asc")
 
   case object Descending extends SortDirection("desc")
-
-  val Default = Ascending
 
   val values = findValues
 }

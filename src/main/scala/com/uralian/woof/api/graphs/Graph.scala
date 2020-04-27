@@ -1,10 +1,10 @@
-package com.uralian.woof.api.embed
+package com.uralian.woof.api.graphs
 
 import com.uralian.woof.util.JsonUtils.translateFields
 import org.json4s.native.Serialization
 
 /**
- * An embeddable graph.
+ * An embeddable live graph.
  *
  * @param id                graph id.
  * @param templateVariables template variables.
@@ -15,7 +15,7 @@ import org.json4s.native.Serialization
  * @param dashUrl           URL of the dashboard this graph it on.
  * @param sharedBy          ID of the user who shared the graph.
  */
-final case class Embed(id: String,
+final case class Graph(id: String,
                        templateVariables: Seq[String],
                        html: String,
                        title: String,
@@ -27,9 +27,9 @@ final case class Embed(id: String,
 }
 
 /**
- * Provides JSON serializer for [[Embed]] instances.
+ * Provides JSON serializer for [[Graph]] instances.
  */
-object Embed {
-  val serializer = translateFields[Embed]("id" -> "embed_id", "templateVariables" -> "template_variables",
+object Graph {
+  val serializer = translateFields[Graph]("id" -> "embed_id", "templateVariables" -> "template_variables",
     "title" -> "graph_title", "dashName" -> "dash_name", "dashUrl" -> "dash_url", "sharedBy" -> "shared_by")
 }

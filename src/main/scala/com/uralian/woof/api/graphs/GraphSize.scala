@@ -1,4 +1,4 @@
-package com.uralian.woof.api.embed
+package com.uralian.woof.api.graphs
 
 import enumeratum.EnumEntry.Lowercase
 import enumeratum._

@@ -1,5 +1,6 @@
 package com.uralian.woof
 
+import com.uralian.woof.api.MetricQuery.FreeformQuery
 import com.uralian.woof.util.JsonUtils
 import org.json4s.DefaultFormats
 
@@ -8,7 +9,11 @@ import org.json4s.DefaultFormats
  */
 package object api {
 
-  val apiFormats = DefaultFormats.withBigDecimal ++ JsonUtils.commonSerializers + Tag.serializer
+  /**
+   * JSON formats.
+   */
+  val apiFormats = DefaultFormats.withBigDecimal ++ JsonUtils.commonSerializers +
+    ScopeElement.serializer + Tag.serializer + TagName.serializer + VarName.serializer + Scope.serializer
 
   /**
    * Implicitly converts a tuple (String, String) into a DataDog Tag.
@@ -19,18 +24,23 @@ package object api {
   implicit def pairToTag(pair: (String, String)): Tag = Tag(pair._1, pair._2)
 
   /**
-   * Encodes a list of tags as a comma separated string.
+   * Implicitly converts a string into a ScopeElement:
+   * {{{
+   * "key:value" -> Tag(key, value)
+   * "name" -> TagName(name)
+   * "$name" -> VarName(name)
+   * }}}
    *
-   * @param tags tags to encode.
-   * @return string in the format "key1:value1,key2:value2,..."
+   * @param str
+   * @return a new scope element.
    */
-  def encodeTags(tags: Seq[Tag]): String = tags.map(_.toString).mkString(",")
+  implicit def stringToScopeElement(str: String): ScopeElement = ScopeElement(str)
 
   /**
-   * Decodes a list of tags from a string.
+   * Implicitly converts a string into a freeform query.
    *
-   * @param str string in the format "key1:value1,key2:value2,..."
-   * @return a list of tags.
+   * @param str query text.
+   * @return a new freeform metric query.
    */
-  def decodeTags(str: String): Seq[Tag] = str.split(",").map(Tag.apply).toSeq
+  implicit def stringToMetricQuery(str: String): FreeformQuery = MetricQuery.text(str)
 }
