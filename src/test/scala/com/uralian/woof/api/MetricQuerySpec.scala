@@ -19,22 +19,19 @@ class MetricQuerySpec extends AbstractUnitSpec {
   "CompoundQuery" should {
     val q1: MetricQuery = "q1"
     "combine queries via +" in {
-      (q1 + "q2").q mustBe text("q1 + q2").q
+      (q1 + "q2").q mustBe text("q1+q2").q
     }
     "combine queries via -" in {
-      (q1 - "q2").q mustBe text("q1 - q2").q
+      (q1 - "q2").q mustBe text("q1-q2").q
     }
     "combine queries via *" in {
-      (q1 * "q2").q mustBe text("q1 * q2").q
+      (q1 * "q2").q mustBe text("q1*q2").q
     }
     "combine queries via /" in {
-      (q1 / "q2").q mustBe text("q1 / q2").q
-    }
-    "combine queries via ," in {
-      (q1 append "q2").q mustBe text("q1 , q2").q
+      (q1 / "q2").q mustBe text("q1/q2").q
     }
     "combine queries via arbitrary separator" in {
-      q1.combine("^")("q2").q mustBe text("q1 ^ q2").q
+      q1.combine("^")("q2").q mustBe text("q1^q2").q
     }
   }
 

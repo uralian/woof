@@ -13,7 +13,8 @@ package object api {
    * JSON formats.
    */
   val apiFormats = DefaultFormats.withBigDecimal ++ JsonUtils.commonSerializers +
-    ScopeElement.serializer + Tag.serializer + TagName.serializer + VarName.serializer + Scope.serializer
+    ScopeElement.serializer + Tag.serializer + TagName.serializer + VarName.serializer + Scope.serializer +
+    MetricQuery.serializer
 
   /**
    * Implicitly converts a tuple (String, String) into a DataDog Tag.

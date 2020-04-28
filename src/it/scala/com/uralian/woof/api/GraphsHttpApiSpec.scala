@@ -1,7 +1,6 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.graphs.GraphSize.{Medium, Small, XLarge}
 import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
 
@@ -12,65 +11,43 @@ import scala.concurrent.ExecutionContext.Implicits.global
  */
 class GraphsHttpApiSpec extends AbstractITSpec {
 
+  import ColorPalette._
+  import DisplayType._
+  import GraphDSL._
+  import LineType._
+  import MetricQuery._
+  import Stroke._
+
   implicit val serialization = org.json4s.native.Serialization
 
   val client = DataDogClient()
   val api: GraphsApi = new GraphsHttpApi(client)
 
   var graphIds: List[String] = Nil
-
+  
   "GraphsHttpApi" should {
-    "create a single query graph" in {
-      val request = CreateGraph("avg:system.cpu.user{*}")
+    "create Timeseries graph" in {
+      val graphDefinition = timeseries(
+        plot(
+          metric("system.cpu.user").groupBy("host").as("a1"),
+          metric("system.cpu.idle").groupBy("host")
+        ).displayAs(Bars).withPalette(Warm),
+        plot(
+          metric("system.cpu.system").groupBy("host").as("a2")
+        ).displayAs(Area).withStyle(Warm, Dashed, Thick),
+        plot(
+          text("avg:system.cpu.user{*}by{host}").as("a3")
+        ).displayAs(Line)
+      )
+      val request = CreateGraph(graphDefinition)
         .withTitle("Sample Graph")
         .withTimeframe(Timeframe.Hour4)
-        .withSize(XLarge)
+        .withSize(GraphSize.Small)
         .withLegend
       val rsp = api.create(request).futureValue
       rsp.id must not be empty
       rsp.templateVariables mustBe empty
-      rsp.html must (include("legend=true") and include("""width="1000""""))
-      rsp.title mustBe "Sample Graph"
-      rsp.revoked mustBe false
-      graphIds +:= rsp.id
-    }
-    "create a multi-query graph" in {
-      val request = CreateGraph("avg:system.cpu.user{*}")
-        .withQueries("avg:system.cpu.idle{*}", "avg:system.cpu.system{*}")
-        .withTitle("Sample Graph")
-        .withTimeframe(Timeframe.Hour1)
-        .withSize(Small)
-      val rsp = api.create(request).futureValue
-      rsp.id must not be empty
-      rsp.templateVariables mustBe empty
-      rsp.html must (not include ("legend=true") and include("""width="400""""))
-      rsp.title mustBe "Sample Graph"
-      rsp.revoked mustBe false
-      graphIds +:= rsp.id
-    }
-    "create a stack graph" in {
-      val request = CreateGraph("avg:system.cpu.user{*}, avg:system.cpu.system{*}")
-        .withTitle("Sample Graph")
-        .withTimeframe(Timeframe.Hour1)
-        .withSize(Medium)
-      val rsp = api.create(request).futureValue
-      rsp.id must not be empty
-      rsp.templateVariables mustBe empty
-      rsp.html must (not include ("legend=true") and include("""width="600""""))
-      rsp.title mustBe "Sample Graph"
-      rsp.revoked mustBe false
-      graphIds +:= rsp.id
-    }
-    "create a graph with variables" in {
-      val request = CreateGraph("avg:system.cpu.user{$var}")
-        .withTitle("Sample Graph")
-        .withTimeframe(Timeframe.Hour4)
-        .withSize(XLarge)
-        .withLegend
-      val rsp = api.create(request).futureValue
-      rsp.id must not be empty
-      rsp.templateVariables mustBe Seq("var")
-      rsp.html must (include("legend=true") and include("""width="1000""""))
+      rsp.html must (include("legend=true") and include("""width="400""""))
       rsp.title mustBe "Sample Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
@@ -85,7 +62,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
     }
     "retrieve all graphs" in {
       val graphs = api.getAll.futureValue
-      graphs.size must be >= 4
+      graphs.size must be >= 1
       graphs.map(_.id) must contain allElementsOf (graphIds)
     }
     "enable graphs" in {

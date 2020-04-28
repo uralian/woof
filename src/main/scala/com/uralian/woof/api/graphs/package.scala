@@ -7,9 +7,18 @@ import enumeratum.Json4s
  */
 package object graphs {
 
-  implicit val metricFormats = apiFormats +
-    Json4s.serializer(Timeframe) +
-    Json4s.serializer(GraphSize) +
+  val enumSerializers = List(
+    Visualization,
+    DisplayType,
+    ColorPalette,
+    LineType,
+    Stroke,
+    Timeframe,
+    GraphSize) map (Json4s.serializer(_))
+
+  implicit val metricFormats = apiFormats ++ enumSerializers +
+    TimeseriesPlot.serializer +
+    GraphDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }
