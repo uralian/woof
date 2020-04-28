@@ -23,26 +23,25 @@ object GraphDSL {
   }
 
   /**
+   * Adds functionality to FormatColor.
+   *
+   * @param underlying format color.
+   */
+  implicit class RichFormatColor(val underlying: FormatColor) extends AnyVal {
+    /**
+     * Creates a standard format palette using current color for text and the argument for background.
+     *
+     * @param bgColor background color.
+     * @return standard format palette.
+     */
+    def on(bgColor: FormatColor): FormatPalette.Standard = FormatPalette.Standard(underlying, bgColor)
+  }
+
+  /**
    * Implicitly converts a metric query into a metric query w/o alias construct.
    *
    * @param query metric query.
    * @return a pair MetricQuery->None.
    */
   implicit def queryToQueryAlias(query: MetricQuery): (MetricQuery, Option[String]) = query -> None
-
-  /**
-   * Creates a new Timeseries graph definition.
-   *
-   * @param plots a list of Timeseries plots.
-   * @return a new TimeseriesDefinition instance.
-   */
-  def timeseries(plots: TimeseriesPlot*) = TimeseriesDefinition(plots)
-
-  /**
-   * Creates a new Timeseries plot.
-   *
-   * @param queries plot queries.
-   * @return a new TimeseriesPlot instance.
-   */
-  def plot(queries: (MetricQuery, Option[String])*) = TimeseriesPlot(queries)
 }

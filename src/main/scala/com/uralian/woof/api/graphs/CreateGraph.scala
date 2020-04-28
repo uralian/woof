@@ -35,13 +35,10 @@ final case class CreateGraph(graph: GraphDefinition[_ <: Visualization],
  */
 object CreateGraph extends JsonUtils {
 
-  private val serRequests: FSer = {
-    case ("graph", graph) => Some("graph_json" -> Serialization.write(graph))
-  }
-
-  private val serLegend: FSer = {
+  private val customize: FSer = {
+    case ("graph", graph)          => Some("graph_json" -> Serialization.write(graph))
     case ("legend", flag: Boolean) => Some("legend" -> (if (flag) "yes" else "no"))
   }
 
-  val serializer = FieldSerializer[CreateGraph](serializer = combine(serLegend, serRequests))
+  val serializer = FieldSerializer[CreateGraph](serializer = customize)
 }

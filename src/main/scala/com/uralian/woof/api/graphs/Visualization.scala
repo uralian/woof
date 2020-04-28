@@ -1,5 +1,6 @@
 package com.uralian.woof.api.graphs
 
+import com.uralian.woof.api.MetricQuery
 import enumeratum.{Enum, EnumEntry}
 
 /**
@@ -14,9 +15,19 @@ sealed abstract class Visualization(override val entryName: String) extends Enum
  */
 object Visualization extends Enum[Visualization] {
 
-  case object Timeseries extends Visualization("timeseries")
+  case object Timeseries extends Visualization("timeseries") {
 
-  case object QueryValue extends Visualization("query_value")
+    def graph(plots: TimeseriesPlot*) = TimeseriesDefinition(plots)
+
+    def plot(queries: (MetricQuery, Option[String])*) = TimeseriesPlot(queries)
+  }
+
+  case object QueryValue extends Visualization("query_value") {
+
+    def graph(plot: QueryValuePlot) = QueryValueDefinition(plot)
+
+    def plot(query: MetricQuery) = QueryValuePlot(query)
+  }
 
   case object QueryTable extends Visualization("query_table")
 

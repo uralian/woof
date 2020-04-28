@@ -17,6 +17,10 @@ class GraphsHttpApiSpec extends AbstractITSpec {
   import LineType._
   import MetricQuery._
   import Stroke._
+  import FormatColor._
+  import FormatComparator._
+  import TextAlign._
+  import QueryValueAggregator._
 
   implicit val serialization = org.json4s.native.Serialization
 
@@ -24,31 +28,54 @@ class GraphsHttpApiSpec extends AbstractITSpec {
   val api: GraphsApi = new GraphsHttpApi(client)
 
   var graphIds: List[String] = Nil
-  
+
   "GraphsHttpApi" should {
     "create Timeseries graph" in {
-      val graphDefinition = timeseries(
+      import Visualization.Timeseries._
+      val g = graph(
         plot(
-          metric("system.cpu.user").groupBy("host").as("a1"),
-          metric("system.cpu.idle").groupBy("host")
+          metric("system.mem.used").groupBy("host").as("a"),
+          metric("system.mem.free").groupBy("host")
         ).displayAs(Bars).withPalette(Warm),
         plot(
-          metric("system.cpu.system").groupBy("host").as("a2")
+          metric("system.mem.total").groupBy("host").as("b")
         ).displayAs(Area).withStyle(Warm, Dashed, Thick),
         plot(
-          text("avg:system.cpu.user{*}by{host}").as("a3")
+          text("avg:system.cpu.user{*}by{host}").as("c")
         ).displayAs(Line)
       )
-      val request = CreateGraph(graphDefinition)
-        .withTitle("Sample Graph")
+      val request = CreateGraph(g)
+        .withTitle("Timeseries Graph")
         .withTimeframe(Timeframe.Hour4)
-        .withSize(GraphSize.Small)
+        .withSize(GraphSize.Large)
         .withLegend
+      println(request)
       val rsp = api.create(request).futureValue
+      println(rsp)
       rsp.id must not be empty
       rsp.templateVariables mustBe empty
-      rsp.html must (include("legend=true") and include("""width="400""""))
-      rsp.title mustBe "Sample Graph"
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "Timeseries Graph"
+      rsp.revoked mustBe false
+      graphIds +:= rsp.id
+    }
+    "create QueryValue graph" in {
+      import Visualization.QueryValue._
+      val g = graph(plot(metric("system.cpu.user").groupBy("host")).aggregate(Last)
+        .withFormats(ConditionalFormat(GE, 5).withStandardColors(Green on Red))
+      ).withCustomUnit("mmm").withPrecision(2).withAlign(Left)
+      val request = CreateGraph(g)
+        .withTitle("QueryValue Graph")
+        .withTimeframe(Timeframe.Hour4)
+        .withSize(GraphSize.Large)
+        .withLegend
+      println(request)
+      val rsp = api.create(request).futureValue
+      println(rsp)
+      rsp.id must not be empty
+      rsp.templateVariables mustBe empty
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "QueryValue Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
     }

@@ -19,6 +19,7 @@ import org.json4s.native.Serialization
 class GraphsApiSpec extends AbstractUnitSpec {
 
   "TimeseriesPlot" should {
+    import Visualization.Timeseries._
     "produce valid JSON for a single query without alias" in {
       val p = plot(metric("system.cpu.idle").filterBy("env" -> "qa")).withStyle(Warm, Dashed, Thin)
       val json = Extraction.decompose(p)
@@ -49,13 +50,14 @@ class GraphsApiSpec extends AbstractUnitSpec {
   }
 
   "TimeseriesDefinition" should {
+    import Visualization.Timeseries._
     "produce valid JSON" in {
-      val graph = timeseries(
+      val g = graph(
         plot(metric("system.cpu.idle").groupBy("host")),
         plot(metric("system.cpu.user").filterBy("env" -> "qa")),
         plot(text("avg:system.cpu.user{*}by{host}"))
       ).withYAxis(scale = GraphScale.Log, max = Some(10), includeZero = false)
-      val json = Extraction.decompose(graph)
+      val json = Extraction.decompose(g)
       val style = ("palette" -> "dog_classic") ~ ("type" -> "solid") ~ ("width" -> "normal")
       json mustBe ("requests" -> List(
         ("q" -> "avg:system.cpu.idle{*}by{host}") ~ ("type" -> "line") ~ ("style" -> style) ~ ("metadata" -> JNothing),
@@ -65,11 +67,80 @@ class GraphsApiSpec extends AbstractUnitSpec {
     }
   }
 
+  "ConditionalFormat" should {
+    import FormatColor._
+    import FormatComparator._
+    "produce valid JSON for standard colors" in {
+      val fmt = ConditionalFormat(LT, 100, White on Green)
+      val json = Extraction.decompose(fmt)
+      json mustBe ("comparator" -> "<") ~ ("value" -> JDecimal(100)) ~ ("palette" -> "white_on_green") ~ ("hide_value" -> false)
+    }
+    "fail on invalid color combination" in {
+      an[AssertionError] must be thrownBy ConditionalFormat(LT, 100, Red on Red)
+    }
+    "produce valid JSON for custom text color" in {
+      val fmt = ConditionalFormat(GE, 5).withCustomTextColor(0x12dd10).withHiddenValue
+      val json = Extraction.decompose(fmt)
+      json mustBe ("comparator" -> ">=") ~ ("value" -> JDecimal(5)) ~ ("palette" -> "custom_text") ~
+        ("custom_fg_color" -> "#12dd10") ~ ("hide_value" -> true)
+    }
+    "produce valid JSON for custom background color" in {
+      val fmt = ConditionalFormat(GE, 1).withCustomBackgroundColor(0x12dd11)
+      val json = Extraction.decompose(fmt)
+      json mustBe ("comparator" -> ">=") ~ ("value" -> JDecimal(1)) ~ ("palette" -> "custom_bg") ~
+        ("custom_bg_color" -> "#12dd11") ~ ("hide_value" -> false)
+    }
+    "produce valid JSON for custom image" in {
+      val fmt = ConditionalFormat(GE, 1).withImageUrl("www.yahoo.com")
+      val json = Extraction.decompose(fmt)
+      json mustBe ("comparator" -> ">=") ~ ("value" -> JDecimal(1)) ~ ("palette" -> "custom_image") ~
+        ("image_url" -> "www.yahoo.com") ~ ("hide_value" -> false)
+    }
+  }
+
+  "QueryValuePlot" should {
+    "produce a valid JSON" in {
+      import FormatColor._
+      import FormatComparator._
+      import QueryValueAggregator._
+      val p = QueryValuePlot(text("max:system.cpu.user")).aggregate(Last).withFormats(
+        ConditionalFormat(LT, 3).withStandardColors(Green on White).withHiddenValue,
+        ConditionalFormat(GT, 5).withCustomTextColor(0xFF0000)
+      )
+      val json = Extraction.decompose(p)
+      json mustBe ("q" -> "max:system.cpu.user") ~ ("aggregator" -> "last") ~ ("conditional_formats" -> List(
+        ("comparator" -> "<") ~ ("value" -> JDecimal(3)) ~ ("palette" -> "green_on_white") ~ ("hide_value" -> true),
+        ("comparator" -> ">") ~ ("value" -> JDecimal(5)) ~ ("palette" -> "custom_text") ~
+          ("custom_fg_color" -> "#ff0000") ~ ("hide_value" -> false)
+      ))
+    }
+  }
+
+  "QueryValueDefinition" should {
+    import FormatColor._
+    import FormatComparator._
+    import QueryValueAggregator._
+    import TextAlign._
+    import Visualization.QueryValue._
+    "produce a valid JSON" in {
+      val g = graph(plot(metric("system.mem.free").groupBy("host")).aggregate(Last)
+        .withFormats(ConditionalFormat(GE, 5).withStandardColors(Green on Red))
+      ).withCustomUnit("mmm").withPrecision(2).withAlign(Left)
+      val json = Extraction.decompose(g)
+      json mustBe ("autoscale" -> true) ~ ("custom_unit" -> "mmm") ~ ("precision" -> 2) ~ ("text_align" -> "left") ~
+        ("viz" -> "query_value") ~ ("requests" -> List(
+        ("q" -> "avg:system.mem.free{*}by{host}") ~ ("aggregator" -> "last") ~ ("conditional_formats" -> List(
+          ("comparator" -> ">=") ~ ("value" -> JDecimal(5)) ~ ("palette" -> "green_on_red") ~ ("hide_value" -> false)
+        ))
+      ))
+    }
+  }
+
   "CreateGraph" should {
     "produce valid payload" in {
-      val request = CreateGraph(timeseries(
-        plot(text("avg:system.cpu.user{*}")),
-        plot(text("avg:system.cpu.idle{*}"))))
+      val request = CreateGraph(Visualization.Timeseries.graph(
+        Visualization.Timeseries.plot(text("avg:system.cpu.user{*}")),
+        Visualization.Timeseries.plot(text("avg:system.cpu.idle{*}"))))
         .withTitle("Sample Graph")
         .withTimeframe(Timeframe.Hour4)
         .withSize(GraphSize.XLarge)

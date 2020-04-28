@@ -2,6 +2,7 @@ package com.uralian.woof.api.graphs
 
 import com.uralian.woof.api.MetricQuery
 import com.uralian.woof.api.graphs.Visualization._
+import com.uralian.woof.util.JsonUtils
 import com.uralian.woof.util.JsonUtils._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -26,13 +27,6 @@ sealed trait GraphDefinition[V <: Visualization] {
    * @return a list of plot definitions.
    */
   def plots: Seq[GraphPlot[V]]
-}
-
-/**
- * Provides JSON serializer for [[GraphDefinition]] instances.
- */
-object GraphDefinition {
-  val serializer = translateFields[GraphDefinition[_]]("visualization" -> "viz", "plots" -> "requests")
 }
 
 /**
@@ -110,4 +104,77 @@ final case class TimeseriesDefinition(plots: Seq[TimeseriesPlot], yaxis: AxisOpt
                 min: Option[BigDecimal] = None,
                 max: Option[BigDecimal] = None,
                 includeZero: Boolean = true): TimeseriesDefinition = withYAxis(AxisOptions(scale, min, max, includeZero))
+}
+
+/**
+ * Factory for [[TimeseriesDefinition]] instances.
+ */
+object TimeseriesDefinition {
+  val serializer = translateFields[TimeseriesDefinition]("visualization" -> "viz", "plots" -> "requests")
+}
+
+/**
+ * QueryValue plot.
+ *
+ * @param query      metric query.
+ * @param aggregator aggregator.
+ * @param formats    conditional formats.
+ */
+final case class QueryValuePlot(query: MetricQuery,
+                                aggregator: QueryValueAggregator = QueryValueAggregator.Default,
+                                formats: Seq[ConditionalFormat] = Nil) extends GraphPlot[QueryValue.type] {
+
+  def aggregate(aggregator: QueryValueAggregator) = copy(aggregator = aggregator)
+
+  def withFormats(moreFormats: ConditionalFormat*) = copy(formats = formats ++ moreFormats)
+}
+
+/**
+ * Factory for [[QueryValuePlot]] instances.
+ */
+object QueryValuePlot extends JsonUtils {
+  val serializer = translateFields[QueryValuePlot]("query" -> "q", "formats" -> "conditional_formats")
+}
+
+/**
+ * QueryValue graph definition.
+ *
+ * @param plot query value plot.
+ * @param autoscale
+ * @param customUnit
+ * @param precision
+ * @param textAlign
+ */
+final case class QueryValueDefinition(plot: QueryValuePlot,
+                                      autoscale: Boolean = true,
+                                      customUnit: Option[String] = None,
+                                      precision: Option[Int] = None,
+                                      textAlign: TextAlign = TextAlign.Center)
+  extends GraphDefinition[QueryValue.type] {
+
+  def notAutoscaled = copy(autoscale = false)
+
+  def withCustomUnit(unit: String) = copy(customUnit = Some(unit))
+
+  def withPrecision(places: Int) = copy(precision = Some(places))
+
+  def withAlign(ta: TextAlign) = copy(textAlign = ta)
+
+  val visualization = QueryValue
+
+  val plots = Seq(plot)
+}
+
+/**
+ * Factory for [[QueryValueDefinition]] instances.
+ */
+object QueryValueDefinition {
+
+  val serializer = FieldSerializer[QueryValueDefinition](serializer = combine(
+    renameFieldsToJson("visualization" -> "viz", "plots" -> "requests", "customUnit" -> "custom_unit",
+      "textAlign" -> "text_align"),
+    {
+      case ("plot", _) => None
+    }
+  ))
 }

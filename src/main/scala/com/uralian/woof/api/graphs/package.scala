@@ -13,12 +13,20 @@ package object graphs {
     ColorPalette,
     LineType,
     Stroke,
+    FormatColor,
+    FormatPalette,
+    FormatComparator,
+    QueryValueAggregator,
+    TextAlign,
     Timeframe,
     GraphSize) map (Json4s.serializer(_))
 
   implicit val metricFormats = apiFormats ++ enumSerializers +
+    ConditionalFormat.serializer +
     TimeseriesPlot.serializer +
-    GraphDefinition.serializer +
+    TimeseriesDefinition.serializer +
+    QueryValuePlot.serializer +
+    QueryValueDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }
