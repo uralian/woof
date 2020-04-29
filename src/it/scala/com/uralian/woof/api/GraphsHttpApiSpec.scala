@@ -22,6 +22,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
   import QueryValueAggregator._
   import Stroke._
   import TextAlign._
+  import GraphScale._
 
   implicit val serialization = org.json4s.native.Serialization
 
@@ -73,6 +74,23 @@ class GraphsHttpApiSpec extends AbstractITSpec {
       rsp.templateVariables mustBe empty
       rsp.html must (include("legend=true") and include("""width="800""""))
       rsp.title mustBe "QueryValue Graph"
+      rsp.revoked mustBe false
+      graphIds +:= rsp.id
+    }
+    "create Heatmap graph" in {
+      import Visualization.Heatmap._
+      val g = graph(plot(text("avg:system.cpu.idle{*}by{host}"), text("avg:system.cpu.system{$var}by{host}")
+      ).withPalette(Cool)).withYAxis(scale = Sqrt, includeZero = false)
+      val request = CreateGraph(g)
+        .withTitle("Heatmap Graph")
+        .withTimeframe(Timeframe.Hour4)
+        .withSize(GraphSize.Large)
+        .withLegend
+      val rsp = api.create(request).futureValue
+      rsp.id must not be empty
+      rsp.templateVariables mustBe Seq("var")
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "Heatmap Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
     }

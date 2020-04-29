@@ -29,6 +29,8 @@ package object graphs {
     QueryValueDefinition.serializer +
     QueryTablePlot.serializer +
     QueryTableDefinition.serializer +
+    HeatmapPlot.serializer +
+    HeatmapDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }

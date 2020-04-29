@@ -1,7 +1,7 @@
 package com.uralian.woof.api.graphs
 
-import com.uralian.woof.api.graphs.Visualization._
 import com.uralian.woof.api._
+import com.uralian.woof.api.graphs.Visualization._
 import com.uralian.woof.util.JsonUtils
 import com.uralian.woof.util.JsonUtils._
 import org.json4s.JsonDSL._
@@ -262,8 +262,6 @@ final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
   require(!columns.isEmpty, "There should be at least one column in the table")
   require(keyColumnIndex < columns.size, "Key column index out of range")
 
-  def withColumns(moreColumns: QueryTableColumn*) = copy(columns = columns ++ moreColumns)
-
   def withKeyColumn(index: Int) = copy(keyColumnIndex = index)
 
   def withRows(dir: SortDirection, limit: Int) = copy(rows = DataWindow(dir, limit))
@@ -288,4 +286,64 @@ object QueryTableDefinition extends JsonUtils {
     combine(ignoreFields("columns", "keyColumnIndex", "rows", "scope", "groupBy"),
       renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"))
   )
+}
+
+/**
+ * Heatmap plot.
+ *
+ * @param queries metric queries.
+ * @param palette color palette.
+ */
+final case class HeatmapPlot(queries: Seq[MetricQuery],
+                             palette: ColorPalette = ColorPalette.Default) extends GraphPlot[Heatmap.type] {
+
+  def withPalette(palette: ColorPalette) = copy(palette = palette)
+}
+
+/**
+ * Factory for [[HeatmapPlot]] instances.
+ */
+object HeatmapPlot {
+
+  import Extraction._
+
+  val serializer: CustomSerializer[HeatmapPlot] = new CustomSerializer[HeatmapPlot](_ => ( {
+    case _ => ??? //todo implement for Dashboard API responses
+  }, {
+    case plot: HeatmapPlot => {
+      val style = ("palette" -> decompose(plot.palette)) ~ ("type" -> "solid") ~ ("width" -> "normal")
+      val queries = plot.queries.map(_.q).mkString(", ")
+      ("q" -> queries) ~ ("style" -> style)
+    }
+  }))
+}
+
+/**
+ * Heatmap graph definition.
+ *
+ * @param plot  heatmap plot.
+ * @param yaxis Y-axis options.
+ */
+final case class HeatmapDefinition(plot: HeatmapPlot,
+                                   yaxis: AxisOptions = AxisOptions.Default) extends GraphDefinition[Heatmap.type] {
+
+  def withYAxis(axis: AxisOptions): HeatmapDefinition = copy(yaxis = axis)
+
+  def withYAxis(scale: GraphScale = GraphScale.Default,
+                min: Option[BigDecimal] = None,
+                max: Option[BigDecimal] = None,
+                includeZero: Boolean = true): HeatmapDefinition = withYAxis(AxisOptions(scale, min, max, includeZero))
+
+  val visualization = Heatmap
+  val plots = Seq(plot)
+}
+
+/**
+ * Factory for [[HeatmapDefinition]] instances.
+ */
+object HeatmapDefinition {
+  val serializer = FieldSerializer[HeatmapDefinition](combine(
+    renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
+    ignoreFields("plot")
+  ))
 }

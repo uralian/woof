@@ -177,6 +177,36 @@ class GraphsApiSpec extends AbstractUnitSpec {
     }
   }
 
+  "HeatmapPlot" should {
+    import ColorPalette._
+    import Visualization.Heatmap._
+    "produce a valid JSON" in {
+      val p = plot(
+        text("avg:system.cpu.user{$cluster} by {env}"),
+        metric("system.cpu.idle").wrapIn("timeshift", 600).filterBy("$var").groupBy("env")
+      ).withPalette(Cool)
+      val json = Extraction.decompose(p)
+      json mustBe ("q" -> "avg:system.cpu.user{$cluster} by {env}, timeshift(avg:system.cpu.idle{$var}by{env},600)") ~
+        ("style" -> ("palette" -> "cool") ~ ("type" -> "solid") ~ ("width" -> "normal"))
+    }
+  }
+
+  "HeatmapDefinition" should {
+    import ColorPalette._
+    import GraphScale._
+    import Visualization.Heatmap._
+    "produce a valid JSON" in {
+      val g = graph(plot(text("avg:system.cpu.user{*}by{env}"), text("avg:system.cpu.idle{$var}by{env}")
+      ).withPalette(Cool)).withYAxis(scale = Sqrt, includeZero = false)
+      val json = Extraction.decompose(g)
+      json mustBe ("yaxis" -> ("scale" -> "sqrt") ~ ("includeZero" -> false)) ~ ("viz" -> "heatmap") ~
+        ("requests" -> List(
+          ("q" -> "avg:system.cpu.user{*}by{env}, avg:system.cpu.idle{$var}by{env}") ~
+            ("style" -> ("palette" -> "cool") ~ ("type" -> "solid") ~ ("width" -> "normal"))
+        ))
+    }
+  }
+
   "CreateGraph" should {
     "produce valid payload" in {
       val request = CreateGraph(Visualization.Timeseries.graph(
