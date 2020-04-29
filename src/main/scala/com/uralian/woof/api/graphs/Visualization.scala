@@ -29,7 +29,12 @@ object Visualization extends Enum[Visualization] {
     def plot(query: MetricQuery) = QueryValuePlot(query)
   }
 
-  case object QueryTable extends Visualization("query_table")
+  case object QueryTable extends Visualization("query_table") {
+
+    def graph(columns: QueryTableColumn*) = QueryTableDefinition(columns)
+
+    def column(metric: String) = QueryTableColumn(metric)
+  }
 
   case object Heatmap extends Visualization("heatmap")
 

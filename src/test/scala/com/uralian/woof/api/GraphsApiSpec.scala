@@ -136,6 +136,47 @@ class GraphsApiSpec extends AbstractUnitSpec {
     }
   }
 
+  "QueryTablePlot" should {
+    import FormatColor._
+    import FormatComparator._
+    import SortDirection._
+    import Visualization.QueryTable._
+    "produce a valid JSON" in {
+      val c = column("system.mem.free")
+        .wrapIn("hour_before(", ")")
+        .aggregate(MetricAggregator.Min)
+        .rollup(QueryValueAggregator.Last)
+        .as("a1")
+        .withFormats(ConditionalFormat(GE, 5).withStandardColors(Green on Red))
+      val plot = c.toPlot(Some(DataWindow(Ascending, 20)), Scope.Filter("env" -> "dev"), Seq(TagName("host")))
+      val json = Extraction.decompose(plot)
+      json mustBe ("q" -> "hour_before(min:system.mem.free{env:dev}by{host})") ~ ("aggregator" -> "last") ~
+        ("alias" -> "a1") ~ ("conditional_formats" -> List(
+        ("comparator" -> ">=") ~ ("value" -> JDecimal(5)) ~ ("palette" -> "green_on_red") ~ ("hide_value" -> false)
+      )) ~ ("order" -> "asc") ~ ("limit" -> 20)
+    }
+  }
+
+  "QueryTableDefinition" should {
+    import QueryValueAggregator._
+    import SortDirection._
+    import Visualization.QueryTable._
+    "produce a valid JSON" in {
+      val g = graph(
+        column("system.mem.free").as("a1"),
+        column("system.mem.total").rollup(Last).as("a2")
+      ).withKeyColumn(1).withRows(Ascending, 5)
+        .filterBy("env" -> "qa").groupBy("client", "host")
+      val json = Extraction.decompose(g)
+      json mustBe ("viz" -> "query_table") ~ ("requests" -> List(
+        ("q" -> "avg:system.mem.free{env:qa}by{client,host}") ~ ("aggregator" -> "avg") ~
+          ("alias" -> "a1") ~ ("conditional_formats" -> List.empty[JValue]),
+        ("q" -> "avg:system.mem.total{env:qa}by{client,host}") ~ ("aggregator" -> "last") ~
+          ("alias" -> "a2") ~ ("conditional_formats" -> List.empty[JValue]) ~ ("order" -> "asc") ~ ("limit" -> 5)
+      ))
+    }
+  }
+
   "CreateGraph" should {
     "produce valid payload" in {
       val request = CreateGraph(Visualization.Timeseries.graph(

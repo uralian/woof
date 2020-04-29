@@ -8,19 +8,20 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 /**
  * Graphs API test suite.
+ * - not testing QueryTable as it is not supported for embeddable graphs
  */
 class GraphsHttpApiSpec extends AbstractITSpec {
 
   import ColorPalette._
   import DisplayType._
+  import FormatColor._
+  import FormatComparator._
   import GraphDSL._
   import LineType._
   import MetricQuery._
-  import Stroke._
-  import FormatColor._
-  import FormatComparator._
-  import TextAlign._
   import QueryValueAggregator._
+  import Stroke._
+  import TextAlign._
 
   implicit val serialization = org.json4s.native.Serialization
 
@@ -49,9 +50,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
         .withTimeframe(Timeframe.Hour4)
         .withSize(GraphSize.Large)
         .withLegend
-      println(request)
       val rsp = api.create(request).futureValue
-      println(rsp)
       rsp.id must not be empty
       rsp.templateVariables mustBe empty
       rsp.html must (include("legend=true") and include("""width="800""""))
@@ -69,9 +68,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
         .withTimeframe(Timeframe.Hour4)
         .withSize(GraphSize.Large)
         .withLegend
-      println(request)
       val rsp = api.create(request).futureValue
-      println(rsp)
       rsp.id must not be empty
       rsp.templateVariables mustBe empty
       rsp.html must (include("legend=true") and include("""width="800""""))

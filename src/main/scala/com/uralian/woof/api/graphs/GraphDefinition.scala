@@ -1,7 +1,7 @@
 package com.uralian.woof.api.graphs
 
-import com.uralian.woof.api.MetricQuery
 import com.uralian.woof.api.graphs.Visualization._
+import com.uralian.woof.api._
 import com.uralian.woof.util.JsonUtils
 import com.uralian.woof.util.JsonUtils._
 import org.json4s.JsonDSL._
@@ -177,4 +177,115 @@ object QueryValueDefinition {
       case ("plot", _) => None
     }
   ))
+}
+
+/**
+ * QueryTable column.
+ *
+ * @param metric     metric query.
+ * @param prefix     metric prefix.
+ * @param suffix     metric suffix.
+ * @param aggregator metric aggregator.
+ * @param rollup     time rollup.
+ * @param alias      column alias.
+ * @param formats    conditional formats.
+ */
+final case class QueryTableColumn(metric: String,
+                                  prefix: String = "",
+                                  suffix: String = "",
+                                  aggregator: MetricAggregator = MetricAggregator.Avg,
+                                  rollup: QueryValueAggregator = QueryValueAggregator.Avg,
+                                  alias: Option[String] = None,
+                                  formats: Seq[ConditionalFormat] = Nil) {
+
+  def wrapIn(prefix: String, suffix: String) = copy(prefix = prefix, suffix = suffix)
+
+  def aggregate(aggregator: MetricAggregator) = copy(aggregator = aggregator)
+
+  def rollup(rollup: QueryValueAggregator) = copy(rollup = rollup)
+
+  def as(alias: String) = copy(alias = Some(alias))
+
+  def withFormats(moreFormats: ConditionalFormat*) = copy(formats = formats ++ moreFormats)
+
+  private[api] def toPlot(rows: Option[DataWindow], scope: Scope, groupBy: Seq[TagName]) = {
+    val query = MetricQuery.QueryBuilder(metric, aggregator, scope, groupBy, prefix + _ + suffix)
+    QueryTablePlot(query, rollup, rows, alias, formats)
+  }
+}
+
+/**
+ * Query table plot.
+ *
+ * @param query
+ * @param aggregator
+ * @param rows
+ * @param alias
+ * @param formats
+ */
+private[api] final case class QueryTablePlot(query: MetricQuery,
+                                             aggregator: QueryValueAggregator,
+                                             rows: Option[DataWindow],
+                                             alias: Option[String],
+                                             formats: Seq[ConditionalFormat]) extends GraphPlot[QueryTable.type]
+
+/**
+ * Factory for [[QueryTablePlot]] instances.
+ */
+private[api] object QueryTablePlot {
+
+  import Extraction._
+
+  val serializer: CustomSerializer[QueryTablePlot] = new CustomSerializer[QueryTablePlot](_ => ( {
+    case _ => ??? //todo implement for Dashboard API responses
+  }, {
+    case plot: QueryTablePlot => ("q" -> decompose(plot.query)) ~ ("aggregator" -> decompose(plot.aggregator)) ~
+      ("alias" -> decompose(plot.alias)) ~ ("conditional_formats" -> decompose(plot.formats)) merge decompose(plot.rows)
+  }))
+}
+
+/**
+ * QueryTable graph definition.
+ *
+ * @param columns        table column.
+ * @param keyColumnIndex the index of the key column.
+ * @param rows           row selection.
+ * @param scope          metric scope.
+ * @param groupBy        metric grouping.
+ */
+final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
+                                      keyColumnIndex: Int = 0,
+                                      rows: DataWindow = DataWindow(SortDirection.Descending, 10),
+                                      scope: Scope = Scope.All,
+                                      groupBy: Seq[TagName] = Nil) extends GraphDefinition[QueryTable.type] {
+
+  require(!columns.isEmpty, "There should be at least one column in the table")
+  require(keyColumnIndex < columns.size, "Key column index out of range")
+
+  def withColumns(moreColumns: QueryTableColumn*) = copy(columns = columns ++ moreColumns)
+
+  def withKeyColumn(index: Int) = copy(keyColumnIndex = index)
+
+  def withRows(dir: SortDirection, limit: Int) = copy(rows = DataWindow(dir, limit))
+
+  def filterBy(elements: ScopeElement*) = copy(scope = Scope.Filter(elements: _*))
+
+  def groupBy(items: String*) = copy(groupBy = groupBy ++ items.map(TagName.apply))
+
+  val visualization = QueryTable
+
+  val plots = columns.zipWithIndex map {
+    case (col, index) => col.toPlot(if (keyColumnIndex == index) Some(rows) else None, scope, groupBy)
+  }
+}
+
+/**
+ * Factory for [[QueryTableDefinition]] instances.
+ */
+object QueryTableDefinition extends JsonUtils {
+
+  val serializer = FieldSerializer[QueryTableDefinition](
+    combine(ignoreFields("columns", "keyColumnIndex", "rows", "scope", "groupBy"),
+      renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"))
+  )
 }

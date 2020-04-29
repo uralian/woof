@@ -27,6 +27,8 @@ package object graphs {
     TimeseriesDefinition.serializer +
     QueryValuePlot.serializer +
     QueryValueDefinition.serializer +
+    QueryTablePlot.serializer +
+    QueryTableDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }

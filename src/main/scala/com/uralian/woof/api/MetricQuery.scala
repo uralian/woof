@@ -144,7 +144,8 @@ object MetricQuery {
 
     def transform(f: String => String) = copy(func = func andThen f)
 
-    def wrapIn(fName: String, args: Any*) = transform(q => fName + "(" + q + args.mkString(",", ",", ")"))
+    def wrapIn(fName: String, args: Any*) =
+      transform(q => fName + "(" + q + args.map(x => "," + x).mkString + ")")
 
     private val groupClause = if (groupBy.isEmpty) "" else "by" + groupBy.mkString("{", ",", "}")
 
