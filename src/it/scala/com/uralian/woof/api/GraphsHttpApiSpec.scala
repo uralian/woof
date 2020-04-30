@@ -17,12 +17,12 @@ class GraphsHttpApiSpec extends AbstractITSpec {
   import FormatColor._
   import FormatComparator._
   import GraphDSL._
+  import GraphScale._
   import LineType._
   import MetricQuery._
   import QueryValueAggregator._
   import Stroke._
   import TextAlign._
-  import GraphScale._
 
   implicit val serialization = org.json4s.native.Serialization
 
@@ -91,6 +91,26 @@ class GraphsHttpApiSpec extends AbstractITSpec {
       rsp.templateVariables mustBe Seq("var")
       rsp.html must (include("legend=true") and include("""width="800""""))
       rsp.title mustBe "Heatmap Graph"
+      rsp.revoked mustBe false
+      graphIds +:= rsp.id
+    }
+    "create a Scatterplot graph" in {
+      import Visualization.Scatter._
+      val g = graph(
+        axis("system.cpu.user").aggregate(MetricAggregator.Min).withOptions(label = Some("xxx")),
+        axis("system.cpu.idle").rollup(QueryValueAggregator.Max).withOptions(scale = Log, max = Some(100))
+      ).pointBy("env").colorBy("client")
+      val request = CreateGraph(g)
+        .withTitle("Scatter Graph")
+        .withTimeframe(Timeframe.Hour4)
+        .withSize(GraphSize.Large)
+        .withLegend
+      val rsp = api.create(request).futureValue
+      rsp.id must not be empty
+      rsp.id must not be empty
+      rsp.templateVariables mustBe Seq("var")
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "Scatter Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
     }

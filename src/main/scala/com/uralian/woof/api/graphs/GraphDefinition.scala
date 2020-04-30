@@ -103,7 +103,7 @@ final case class TimeseriesDefinition(plots: Seq[TimeseriesPlot], yaxis: AxisOpt
   def withYAxis(scale: GraphScale = GraphScale.Default,
                 min: Option[BigDecimal] = None,
                 max: Option[BigDecimal] = None,
-                includeZero: Boolean = true): TimeseriesDefinition = withYAxis(AxisOptions(scale, min, max, includeZero))
+                includeZero: Boolean = true): TimeseriesDefinition = withYAxis(AxisOptions(None, scale, min, max, includeZero))
 }
 
 /**
@@ -183,8 +183,8 @@ object QueryValueDefinition {
  * QueryTable column.
  *
  * @param metric     metric query.
- * @param prefix     metric prefix.
- * @param suffix     metric suffix.
+ * @param prefix     query prefix.
+ * @param suffix     query suffix.
  * @param aggregator metric aggregator.
  * @param rollup     time rollup.
  * @param alias      column alias.
@@ -268,7 +268,7 @@ final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
 
   def filterBy(elements: ScopeElement*) = copy(scope = Scope.Filter(elements: _*))
 
-  def groupBy(items: String*) = copy(groupBy = groupBy ++ items.map(TagName.apply))
+  def groupBy(names: String*) = copy(groupBy = groupBy ++ names.map(TagName.apply))
 
   val visualization = QueryTable
 
@@ -332,9 +332,10 @@ final case class HeatmapDefinition(plot: HeatmapPlot,
   def withYAxis(scale: GraphScale = GraphScale.Default,
                 min: Option[BigDecimal] = None,
                 max: Option[BigDecimal] = None,
-                includeZero: Boolean = true): HeatmapDefinition = withYAxis(AxisOptions(scale, min, max, includeZero))
+                includeZero: Boolean = true): HeatmapDefinition = withYAxis(AxisOptions(None, scale, min, max, includeZero))
 
   val visualization = Heatmap
+
   val plots = Seq(plot)
 }
 
@@ -345,5 +346,108 @@ object HeatmapDefinition {
   val serializer = FieldSerializer[HeatmapDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
     ignoreFields("plot")
+  ))
+}
+
+/**
+ * Scatter plot axis.
+ *
+ * @param metric     metric name.
+ * @param prefix     query prefix.
+ * @param suffix     query suffix.
+ * @param scope      query scope.
+ * @param aggregator metric aggregator.
+ * @param rollup     metric rollup.
+ * @param options    axis options.
+ */
+final case class ScatterAxis(metric: String,
+                             prefix: String = "",
+                             suffix: String = "",
+                             scope: Scope = Scope.All,
+                             aggregator: MetricAggregator = MetricAggregator.Avg,
+                             rollup: QueryValueAggregator = QueryValueAggregator.Avg,
+                             options: AxisOptions = AxisOptions.Default) {
+
+  def wrapIn(prefix: String, suffix: String) = copy(prefix = prefix, suffix = suffix)
+
+  def filterBy(elements: ScopeElement*) = copy(scope = Scope.Filter(elements: _*))
+
+  def aggregate(aggregator: MetricAggregator) = copy(aggregator = aggregator)
+
+  def rollup(rollup: QueryValueAggregator) = copy(rollup = rollup)
+
+  def withOptions(opt: AxisOptions): ScatterAxis = copy(options = opt)
+
+  def withOptions(label: Option[String] = None,
+                  scale: GraphScale = GraphScale.Default,
+                  min: Option[BigDecimal] = None,
+                  max: Option[BigDecimal] = None,
+                  includeZero: Boolean = true): ScatterAxis = withOptions(AxisOptions(label, scale, min, max, includeZero))
+
+  private[api] def toPlot(pointBy: Seq[TagName], colorBy: Seq[TagName]) = {
+    val query = MetricQuery.QueryBuilder(metric, aggregator, scope, pointBy ++ colorBy, prefix + _ + suffix)
+    ScatterPlot(query, rollup)
+  }
+}
+
+/**
+ * Scatter plot.
+ *
+ * @param query      metric query.
+ * @param aggregator query aggregator.
+ */
+private[api] final case class ScatterPlot(query: MetricQuery, aggregator: QueryValueAggregator) extends GraphPlot[Scatter.type]
+
+/**
+ * Factory for [[ScatterPlot]] instances.
+ */
+private[api] object ScatterPlot {
+
+  import Extraction._
+
+  val serializer: CustomSerializer[ScatterPlot] = new CustomSerializer[ScatterPlot](_ => ( {
+    case _ => ??? //todo implement for Dashboard API responses
+  }, {
+    case plot: ScatterPlot => ("q" -> decompose(plot.query)) ~ ("aggregator" -> decompose(plot.aggregator))
+  }))
+}
+
+/**
+ * Scatter graph definition.
+ *
+ * @param x       X-axis definition.
+ * @param y       Y-axis definition.
+ * @param pointBy point by tag names.
+ * @param colorBy color by tag names.
+ */
+final case class ScatterDefinition(x: ScatterAxis,
+                                   y: ScatterAxis,
+                                   pointBy: Seq[TagName] = Nil,
+                                   colorBy: Seq[TagName] = Nil) extends GraphDefinition[Scatter.type] {
+
+  def pointBy(names: String*): ScatterDefinition = copy(pointBy = pointBy ++ names.map(TagName.apply))
+
+  def colorBy(names: String*): ScatterDefinition = copy(colorBy = colorBy ++ names.map(TagName.apply))
+
+  val visualization = Scatter
+
+  val plots = List(x.toPlot(pointBy, colorBy), y.toPlot(pointBy, colorBy))
+}
+
+/**
+ * Factory for [[ScatterDefinition]] instances.
+ */
+object ScatterDefinition extends JsonUtils {
+
+  import Extraction._
+
+  val serializer = FieldSerializer[ScatterDefinition](combine(
+    ignoreFields("pointBy"),
+    renameFieldsToJson("colorBy" -> "color_by_groups", "visualization" -> "viz"),
+    {
+      case ("plots", x :: y :: Nil) => Some("requests" -> ("x" -> decompose(x)) ~ ("y" -> decompose(y)))
+      case ("x", x: ScatterAxis)    => Some("xaxis" -> decompose(x.options))
+      case ("y", y: ScatterAxis)    => Some("yaxis" -> decompose(y.options))
+    }
   ))
 }

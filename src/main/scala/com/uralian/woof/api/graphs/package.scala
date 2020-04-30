@@ -31,6 +31,8 @@ package object graphs {
     QueryTableDefinition.serializer +
     HeatmapPlot.serializer +
     HeatmapDefinition.serializer +
+    ScatterPlot.serializer +
+    ScatterDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }

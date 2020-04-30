@@ -6,6 +6,7 @@ import com.uralian.woof.api.MetricQuery._
 import com.uralian.woof.api.graphs.ColorPalette._
 import com.uralian.woof.api.graphs.DisplayType._
 import com.uralian.woof.api.graphs.GraphDSL._
+import com.uralian.woof.api.graphs.GraphScale.Log
 import com.uralian.woof.api.graphs.LineType._
 import com.uralian.woof.api.graphs.Stroke._
 import com.uralian.woof.api.graphs._
@@ -204,6 +205,35 @@ class GraphsApiSpec extends AbstractUnitSpec {
           ("q" -> "avg:system.cpu.user{*}by{env}, avg:system.cpu.idle{$var}by{env}") ~
             ("style" -> ("palette" -> "cool") ~ ("type" -> "solid") ~ ("width" -> "normal"))
         ))
+    }
+  }
+
+  "ScatterPlot" should {
+    import Visualization.Scatter._
+    "produce a valid JSON" in {
+      val c = axis("system.cpu.user").filterBy("env" -> "qa")
+        .wrapIn("hour_before(", ")")
+        .aggregate(MetricAggregator.Min).rollup(QueryValueAggregator.Last)
+      val plot = c.toPlot(Seq(TagName("zone"), TagName("replica")), Seq(TagName("client")))
+      val json = Extraction.decompose(plot)
+      json mustBe ("q" -> "hour_before(min:system.cpu.user{env:qa}by{zone,replica,client})") ~ ("aggregator" -> "last")
+    }
+  }
+
+  "ScatterDefinition" should {
+    import Visualization.Scatter._
+    "produce a valid JSON" in {
+      val g = graph(
+        axis("system.cpu.user").aggregate(MetricAggregator.Min).withOptions(label = Some("xxx")),
+        axis("system.cpu.idle").rollup(QueryValueAggregator.Max).withOptions(scale = Log, max = Some(100))
+      ).pointBy("zone", "replica").colorBy("client")
+      val json = Extraction.decompose(g)
+      json mustBe ("xaxis" -> ("label" -> "xxx") ~ ("scale" -> "linear") ~ ("includeZero" -> true)) ~
+        ("yaxis" -> ("scale" -> "log") ~ ("max" -> JDecimal(100)) ~ ("includeZero" -> true)) ~
+        ("color_by_groups" -> List("client")) ~ ("viz" -> "scatterplot") ~ ("requests" ->
+        ("x" -> ("q" -> "min:system.cpu.user{*}by{zone,replica,client}") ~ ("aggregator" -> "avg")) ~
+          ("y" -> ("q" -> "avg:system.cpu.idle{*}by{zone,replica,client}") ~ ("aggregator" -> "max"))
+        )
     }
   }
 

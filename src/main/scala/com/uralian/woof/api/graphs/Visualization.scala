@@ -43,7 +43,12 @@ object Visualization extends Enum[Visualization] {
     def plot(queries: MetricQuery*) = HeatmapPlot(queries)
   }
 
-  case object Scatter extends Visualization("scatterplot")
+  case object Scatter extends Visualization("scatterplot") {
+
+    def graph(x: ScatterAxis, y: ScatterAxis) = ScatterDefinition(x, y)
+
+    def axis(metric: String) = ScatterAxis(metric)
+  }
 
   case object Distribution extends Visualization("distribution")
 
