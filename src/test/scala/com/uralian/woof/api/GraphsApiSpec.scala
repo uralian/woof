@@ -4,6 +4,7 @@ import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.MetricAggregator._
 import com.uralian.woof.api.MetricQuery._
 import com.uralian.woof.api.SortDirection.Descending
+import com.uralian.woof.api.graphs.ChangeOrder.Change
 import com.uralian.woof.api.graphs.ColorPalette._
 import com.uralian.woof.api.graphs.DisplayType._
 import com.uralian.woof.api.graphs.FormatColor.{Red, White}
@@ -13,6 +14,7 @@ import com.uralian.woof.api.graphs.GraphScale.Log
 import com.uralian.woof.api.graphs.LineType._
 import com.uralian.woof.api.graphs.RankAggregator.L2Norm
 import com.uralian.woof.api.graphs.Stroke._
+import com.uralian.woof.api.graphs.TimeBase.DayBefore
 import com.uralian.woof.api.graphs._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -292,6 +294,34 @@ class GraphsApiSpec extends AbstractUnitSpec {
           ("conditional_formats" -> List(
             ("comparator" -> ">") ~ ("value" -> JDecimal(123)) ~ ("palette" -> "red_on_white") ~ ("hide_value" -> false)
           ))
+      ))
+    }
+  }
+
+  "ChangePlot" should {
+    import Visualization.Change._
+    "produce a valid JSON" in {
+      val p = plot("system.load.1").aggregate(Max).filterBy("env" -> "production")
+        .groupBy("host").compareTo(DayBefore).sortBy(Change, Descending)
+        .increaseIsBetter.showAbsolute.showPresent
+      val json = Extraction.decompose(p)
+      json mustBe ("compare_to" -> "day_before") ~ ("order_by" -> "change") ~ ("order_dir" -> "desc") ~
+        ("increase_good" -> true) ~ ("change_type" -> "absolute") ~ ("extra_col" -> "present") ~
+        ("q" -> "max:system.load.1{env:production}by{host}")
+    }
+  }
+
+  "ChangeDefinition" should {
+    import Visualization.Change._
+    "produce a valid JSON" in {
+      val g = graph(plot("system.load.1").aggregate(Max).filterBy("env" -> "production")
+        .groupBy("host").compareTo(DayBefore).sortBy(Change, Descending)
+        .increaseIsBetter.showAbsolute.showPresent)
+      val json = Extraction.decompose(g)
+      json mustBe ("viz" -> "change") ~ ("requests" -> List(
+        ("compare_to" -> "day_before") ~ ("order_by" -> "change") ~ ("order_dir" -> "desc") ~
+          ("increase_good" -> true) ~ ("change_type" -> "absolute") ~ ("extra_col" -> "present") ~
+          ("q" -> "max:system.load.1{env:production}by{host}")
       ))
     }
   }

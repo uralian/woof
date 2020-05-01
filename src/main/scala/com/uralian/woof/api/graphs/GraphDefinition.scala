@@ -520,6 +520,8 @@ final case class ToplistPlot(query: MetricQuery,
   def aggregate(aggregator: RankAggregator) = copy(aggregator = aggregator)
 
   def withFormats(moreFormats: ConditionalFormat*) = copy(formats = formats ++ moreFormats)
+
+  private val q = s"top(${query.q}, ${rows.limit}, '${aggregator.entryName}', '${rows.order.entryName}')"
 }
 
 /**
@@ -527,14 +529,10 @@ final case class ToplistPlot(query: MetricQuery,
  */
 object ToplistPlot {
 
-  import Extraction._
-
-  val serializer: CustomSerializer[ToplistPlot] = new CustomSerializer[ToplistPlot](_ => ( {
-    case _ => ??? //todo implement for Dashboard API responses
-  }, {
-    case plot: ToplistPlot => ("conditional_formats" -> decompose(plot.formats)) ~
-      ("q" -> s"top(${plot.query.q}, ${plot.rows.limit}, '${plot.aggregator.entryName}', '${plot.rows.order.entryName}')")
-  }))
+  val serializer = FieldSerializer[ToplistPlot](combine(
+    renameFieldsToJson("formats" -> "conditional_formats"),
+    ignoreFields("query", "rows", "aggregator")
+  ))
 }
 
 /**
@@ -552,6 +550,96 @@ final case class ToplistDefinition(plot: ToplistPlot) extends GraphDefinition[To
  */
 object ToplistDefinition {
   val serializer = FieldSerializer[ToplistDefinition](combine(
+    renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
+    ignoreFields("plot")
+  ))
+}
+
+/**
+ * Change plot.
+ *
+ * @param metric         metric name.
+ * @param aggregator     metric aggregator.
+ * @param filterBy       list of tags to filter by.
+ * @param groupBy        list of tag names to group by.
+ * @param compareTo      time base for comparison.
+ * @param sortBy         sorting criteria.
+ * @param sortDirection  sorting direction.
+ * @param increaseGood   whether the increase is good.
+ * @param absolute       whether to show the absolute or relative value.
+ * @param includePresent whether to include the present value.
+ */
+final case class ChangePlot(metric: String,
+                            aggregator: MetricAggregator = MetricAggregator.Avg,
+                            filterBy: Seq[Tag] = Nil,
+                            groupBy: Seq[TagName] = Nil,
+                            compareTo: TimeBase = TimeBase.Default,
+                            sortBy: ChangeOrder = ChangeOrder.Default,
+                            sortDirection: SortDirection = SortDirection.Descending,
+                            increaseGood: Boolean = true,
+                            absolute: Boolean = true,
+                            includePresent: Boolean = false) extends GraphPlot[Change.type] {
+
+  def aggregate(aggregator: MetricAggregator) = copy(aggregator = aggregator)
+
+  def filterBy(tags: Tag*) = copy(filterBy = filterBy ++ tags)
+
+  def groupBy(names: String*): ChangePlot = copy(groupBy = groupBy ++ names.map(TagName.apply))
+
+  def compareTo(tb: TimeBase): ChangePlot = copy(compareTo = tb)
+
+  def sortBy(order: ChangeOrder, dir: SortDirection): ChangePlot = copy(sortBy = order, sortDirection = dir)
+
+  def increaseIsBetter = copy(increaseGood = true)
+
+  def decreaseIsBetter = copy(increaseGood = false)
+
+  def showAbsolute = copy(absolute = true)
+
+  def showRelative = copy(absolute = false)
+
+  def showPresent = copy(includePresent = true)
+
+  private val q = MetricQuery.metric(metric).aggregate(aggregator).filterBy(filterBy: _*)
+    .groupBy(groupBy.map(_.toString): _*)
+}
+
+/**
+ * Factory for [[ChangePlot]] instances.
+ */
+object ChangePlot {
+
+  private val customizeFields: FSer = {
+    case ("absolute", true)        => Some("change_type" -> "absolute")
+    case ("absolute", false)       => Some("change_type" -> "relative")
+    case ("includePresent", true)  => Some("extra_col" -> "present")
+    case ("includePresent", false) => Some("extra_col" -> "")
+  }
+
+  val serializer = FieldSerializer[ChangePlot](combine(
+    ignoreFields("metric", "aggregator", "filterBy", "groupBy"),
+    renameFieldsToJson("compareTo" -> "compare_to", "sortBy" -> "order_by", "sortDirection" -> "order_dir",
+      "increaseGood" -> "increase_good"
+    ),
+    customizeFields
+  ))
+}
+
+/**
+ * Change graph definition.
+ *
+ * @param plot change plot.
+ */
+final case class ChangeDefinition(plot: ChangePlot) extends GraphDefinition[Change.type] {
+  val visualization = Change
+  val plots = Seq(plot)
+}
+
+/**
+ * Factory for [[ChangeDefinition]] instances.
+ */
+object ChangeDefinition {
+  val serializer = FieldSerializer[ChangeDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
     ignoreFields("plot")
   ))

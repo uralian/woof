@@ -1,6 +1,8 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
+import com.uralian.woof.api.graphs.ChangeOrder.Change
+import com.uralian.woof.api.graphs.TimeBase.DayBefore
 import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
 
@@ -21,9 +23,9 @@ class GraphsHttpApiSpec extends AbstractITSpec {
   import LineType._
   import MetricQuery._
   import QueryValueAggregator._
+  import SortDirection._
   import Stroke._
   import TextAlign._
-  import SortDirection._
 
   implicit val serialization = org.json4s.native.Serialization
 
@@ -145,6 +147,24 @@ class GraphsHttpApiSpec extends AbstractITSpec {
       rsp.templateVariables mustBe empty
       rsp.html must (include("legend=true") and include("""width="800""""))
       rsp.title mustBe "Toplist Graph"
+      rsp.revoked mustBe false
+      graphIds +:= rsp.id
+    }
+    "create a Change graph" in {
+      import Visualization.Change._
+      val g = graph(plot("system.load.1").aggregate(MetricAggregator.Max)
+        .filterBy("env" -> "production").groupBy("host").compareTo(DayBefore).sortBy(Change, Descending)
+        .increaseIsBetter.showAbsolute.showPresent)
+      val request = CreateGraph(g)
+        .withTitle("Change Graph")
+        .withTimeframe(Timeframe.Hour4)
+        .withSize(GraphSize.Large)
+        .withLegend
+      val rsp = api.create(request).futureValue
+      rsp.id must not be empty
+      rsp.templateVariables mustBe empty
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "Change Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
     }

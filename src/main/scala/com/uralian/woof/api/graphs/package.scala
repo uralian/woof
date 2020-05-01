@@ -37,6 +37,8 @@ package object graphs {
     DistributionDefinition.serializer +
     ToplistPlot.serializer +
     ToplistDefinition.serializer +
+    ChangePlot.serializer +
+    ChangeDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }

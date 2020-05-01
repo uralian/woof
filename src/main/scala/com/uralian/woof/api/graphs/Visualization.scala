@@ -64,7 +64,12 @@ object Visualization extends Enum[Visualization] {
     def plot(query: MetricQuery) = ToplistPlot(query)
   }
 
-  case object Change extends Visualization("change")
+  case object Change extends Visualization("change") {
+
+    def graph(plot: ChangePlot) = ChangeDefinition(plot)
+
+    def plot(metric: String) = ChangePlot(metric)
+  }
 
   case object Hostmap extends Visualization("hostmap")
 
