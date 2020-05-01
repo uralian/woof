@@ -237,6 +237,34 @@ class GraphsApiSpec extends AbstractUnitSpec {
     }
   }
 
+  "DistributionPlot" should {
+    import Visualization.Distribution._
+    "produce a valid JSON" in {
+      val p = plot(
+        metric("system.cpu.user").aggregate(Avg).filterBy("env" -> "qa").groupBy("host"),
+        text("avg:system.cpu.user{env:qa} by {host}/2")
+      ).withPalette(Cool)
+      val json = Extraction.decompose(p)
+      json mustBe ("q" -> "avg:system.cpu.user{env:qa}by{host}, avg:system.cpu.user{env:qa} by {host}/2") ~
+        ("style" -> ("palette" -> "cool") ~ ("type" -> "solid") ~ ("width" -> "normal"))
+    }
+  }
+
+  "DistributionDefinition" should {
+    import Visualization.Distribution._
+    "produce a valid JSON" in {
+      val g = graph(plot(
+        metric("system.cpu.user").aggregate(Avg).filterBy("env" -> "qa").groupBy("host"),
+        text("avg:system.cpu.user{env:qa} by {host}/2")
+      ).withPalette(Cool))
+      val json = Extraction.decompose(g)
+      json mustBe ("viz" -> "distribution") ~ ("requests" -> List(
+        ("q" -> "avg:system.cpu.user{env:qa}by{host}, avg:system.cpu.user{env:qa} by {host}/2") ~
+          ("style" -> ("palette" -> "cool") ~ ("type" -> "solid") ~ ("width" -> "normal"))
+      ))
+    }
+  }
+
   "CreateGraph" should {
     "produce valid payload" in {
       val request = CreateGraph(Visualization.Timeseries.graph(

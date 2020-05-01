@@ -107,10 +107,25 @@ class GraphsHttpApiSpec extends AbstractITSpec {
         .withLegend
       val rsp = api.create(request).futureValue
       rsp.id must not be empty
-      rsp.id must not be empty
       rsp.templateVariables mustBe Seq("var")
       rsp.html must (include("legend=true") and include("""width="800""""))
       rsp.title mustBe "Scatter Graph"
+      rsp.revoked mustBe false
+      graphIds +:= rsp.id
+    }
+    "create a Distribution graph" in {
+      import Visualization.Distribution._
+      val g = graph(plot(text("avg:system.cpu.user{env:qa} by {host}")).withPalette(Cool))
+      val request = CreateGraph(g)
+        .withTitle("Distribution Graph")
+        .withTimeframe(Timeframe.Hour4)
+        .withSize(GraphSize.Large)
+        .withLegend
+      val rsp = api.create(request).futureValue
+      rsp.id must not be empty
+      rsp.templateVariables mustBe empty
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "Distribution Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
     }

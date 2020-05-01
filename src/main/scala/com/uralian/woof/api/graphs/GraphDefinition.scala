@@ -1,5 +1,6 @@
 package com.uralian.woof.api.graphs
 
+import com.uralian.woof.api
 import com.uralian.woof.api._
 import com.uralian.woof.api.graphs.Visualization._
 import com.uralian.woof.util.JsonUtils
@@ -441,13 +442,63 @@ object ScatterDefinition extends JsonUtils {
 
   import Extraction._
 
+  private val customizeFields: FSer = {
+    case ("plots", x :: y :: Nil) => Some("requests" -> ("x" -> decompose(x)) ~ ("y" -> decompose(y)))
+    case ("x", x: ScatterAxis)    => Some("xaxis" -> decompose(x.options))
+    case ("y", y: ScatterAxis)    => Some("yaxis" -> decompose(y.options))
+  }
+
   val serializer = FieldSerializer[ScatterDefinition](combine(
     ignoreFields("pointBy"),
     renameFieldsToJson("colorBy" -> "color_by_groups", "visualization" -> "viz"),
-    {
-      case ("plots", x :: y :: Nil) => Some("requests" -> ("x" -> decompose(x)) ~ ("y" -> decompose(y)))
-      case ("x", x: ScatterAxis)    => Some("xaxis" -> decompose(x.options))
-      case ("y", y: ScatterAxis)    => Some("yaxis" -> decompose(y.options))
-    }
+    customizeFields
+  ))
+}
+
+/**
+ * Distribution plot.
+ *
+ * @param queries metric queries.
+ * @param palette color palette.
+ */
+final case class DistributionPlot(queries: Seq[MetricQuery],
+                                  palette: ColorPalette = ColorPalette.Default) extends GraphPlot[Distribution.type] {
+
+  def withPalette(palette: ColorPalette) = copy(palette = palette)
+}
+
+/**
+ * Factory for [[DistributionPlot]] instances.
+ */
+object DistributionPlot {
+
+  val serializer = FieldSerializer[DistributionPlot](serializer = {
+    case ("queries", queries: Seq[_]) => Some("q" -> queries.map(_.asInstanceOf[api.MetricQuery].q).mkString(", "))
+    case ("palette", palette: ColorPalette)     => Some("style" ->
+      ("palette" -> palette.entryName) ~ ("type" -> "solid") ~ ("width" -> "normal")
+    )
+  }
+  )
+}
+
+/**
+ * Distribution graph definition.
+ *
+ * @param plot distribution plot.
+ */
+final case class DistributionDefinition(plot: DistributionPlot) extends GraphDefinition[Distribution.type] {
+
+  val visualization = Distribution
+
+  val plots = Seq(plot)
+}
+
+/**
+ * Factory for [[DistributionDefinition]] instances.
+ */
+object DistributionDefinition {
+  val serializer = FieldSerializer[DistributionDefinition](combine(
+    renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
+    ignoreFields("plot")
   ))
 }

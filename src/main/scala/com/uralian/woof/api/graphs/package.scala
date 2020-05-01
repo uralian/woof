@@ -33,6 +33,8 @@ package object graphs {
     HeatmapDefinition.serializer +
     ScatterPlot.serializer +
     ScatterDefinition.serializer +
+    DistributionPlot.serializer +
+    DistributionDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }

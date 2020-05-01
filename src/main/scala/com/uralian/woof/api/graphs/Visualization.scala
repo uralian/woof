@@ -50,7 +50,12 @@ object Visualization extends Enum[Visualization] {
     def axis(metric: String) = ScatterAxis(metric)
   }
 
-  case object Distribution extends Visualization("distribution")
+  case object Distribution extends Visualization("distribution") {
+
+    def graph(plot: DistributionPlot) = DistributionDefinition(plot)
+
+    def plot(queries: MetricQuery*) = DistributionPlot(queries)
+  }
 
   case object Toplist extends Visualization("toplist")
 
