@@ -70,11 +70,11 @@ sealed trait MetricQuery {
   def /(q2: MetricQuery) = combine("/")(q2)
 
   /**
-   * Combines this query with another one via an arbitrary separator
+   * Combines this query with another one via an arbitrary separator.
    *
    * @param separator separator string.
    * @param q2        second query.
-   * @return compound query that evaluates to string this.r<separator>q2.r
+   * @return compound query that evaluates to string (this.r)(separator)(q2.r).
    */
   def combine(separator: String)(q2: MetricQuery) = CompoundQuery(this, separator, q2)
 }

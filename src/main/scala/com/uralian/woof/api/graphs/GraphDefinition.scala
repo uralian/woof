@@ -3,7 +3,6 @@ package com.uralian.woof.api.graphs
 import com.uralian.woof.api
 import com.uralian.woof.api._
 import com.uralian.woof.api.graphs.Visualization._
-import com.uralian.woof.util.JsonUtils
 import com.uralian.woof.util.JsonUtils._
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -133,7 +132,7 @@ final case class QueryValuePlot(query: MetricQuery,
 /**
  * Factory for [[QueryValuePlot]] instances.
  */
-object QueryValuePlot extends JsonUtils {
+object QueryValuePlot {
   val serializer = translateFields[QueryValuePlot]("query" -> "q", "formats" -> "conditional_formats")
 }
 
@@ -218,11 +217,11 @@ final case class QueryTableColumn(metric: String,
 /**
  * Query table plot.
  *
- * @param query
- * @param aggregator
- * @param rows
- * @param alias
- * @param formats
+ * @param query      metric query.
+ * @param aggregator aggregator.
+ * @param rows       row selection.
+ * @param alias      plot alias.
+ * @param formats    conditional formats.
  */
 private[api] final case class QueryTablePlot(query: MetricQuery,
                                              aggregator: QueryValueAggregator,
@@ -281,7 +280,7 @@ final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
 /**
  * Factory for [[QueryTableDefinition]] instances.
  */
-object QueryTableDefinition extends JsonUtils {
+object QueryTableDefinition {
 
   val serializer = FieldSerializer[QueryTableDefinition](
     combine(ignoreFields("columns", "keyColumnIndex", "rows", "scope", "groupBy"),
@@ -438,7 +437,7 @@ final case class ScatterDefinition(x: ScatterAxis,
 /**
  * Factory for [[ScatterDefinition]] instances.
  */
-object ScatterDefinition extends JsonUtils {
+object ScatterDefinition {
 
   import Extraction._
 
@@ -473,8 +472,8 @@ final case class DistributionPlot(queries: Seq[MetricQuery],
 object DistributionPlot {
 
   val serializer = FieldSerializer[DistributionPlot](serializer = {
-    case ("queries", queries: Seq[_]) => Some("q" -> queries.map(_.asInstanceOf[api.MetricQuery].q).mkString(", "))
-    case ("palette", palette: ColorPalette)     => Some("style" ->
+    case ("queries", queries: Seq[_])       => Some("q" -> queries.map(_.asInstanceOf[api.MetricQuery].q).mkString(", "))
+    case ("palette", palette: ColorPalette) => Some("style" ->
       ("palette" -> palette.entryName) ~ ("type" -> "solid") ~ ("width" -> "normal")
     )
   }
@@ -498,6 +497,61 @@ final case class DistributionDefinition(plot: DistributionPlot) extends GraphDef
  */
 object DistributionDefinition {
   val serializer = FieldSerializer[DistributionDefinition](combine(
+    renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
+    ignoreFields("plot")
+  ))
+}
+
+/**
+ * Toplist plost.
+ *
+ * @param query      metric query.
+ * @param rows       row selection.
+ * @param aggregator aggregator.
+ * @param formats    conditional formats.
+ */
+final case class ToplistPlot(query: MetricQuery,
+                             rows: DataWindow = DataWindow(SortDirection.Descending, 10),
+                             aggregator: RankAggregator = RankAggregator.Default,
+                             formats: Seq[ConditionalFormat] = Nil) extends GraphPlot[Toplist.type] {
+
+  def withRows(dir: SortDirection, limit: Int) = copy(rows = DataWindow(dir, limit))
+
+  def aggregate(aggregator: RankAggregator) = copy(aggregator = aggregator)
+
+  def withFormats(moreFormats: ConditionalFormat*) = copy(formats = formats ++ moreFormats)
+}
+
+/**
+ * Factory for [[ToplistPlot]] instances.
+ */
+object ToplistPlot {
+
+  import Extraction._
+
+  val serializer: CustomSerializer[ToplistPlot] = new CustomSerializer[ToplistPlot](_ => ( {
+    case _ => ??? //todo implement for Dashboard API responses
+  }, {
+    case plot: ToplistPlot => ("conditional_formats" -> decompose(plot.formats)) ~
+      ("q" -> s"top(${plot.query.q}, ${plot.rows.limit}, '${plot.aggregator.entryName}', '${plot.rows.order.entryName}')")
+  }))
+}
+
+/**
+ * Toplist graph definition.
+ *
+ * @param plot toplist plot.
+ */
+final case class ToplistDefinition(plot: ToplistPlot) extends GraphDefinition[Toplist.type] {
+  val visualization = Toplist
+  val plots = Seq(plot)
+}
+
+/**
+ * Factory for [[ToplistDefinition]] instances.
+ */
+object ToplistDefinition {
+  val serializer = FieldSerializer[ToplistDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
     ignoreFields("plot")
   ))

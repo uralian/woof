@@ -23,6 +23,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
   import QueryValueAggregator._
   import Stroke._
   import TextAlign._
+  import SortDirection._
 
   implicit val serialization = org.json4s.native.Serialization
 
@@ -126,6 +127,24 @@ class GraphsHttpApiSpec extends AbstractITSpec {
       rsp.templateVariables mustBe empty
       rsp.html must (include("legend=true") and include("""width="800""""))
       rsp.title mustBe "Distribution Graph"
+      rsp.revoked mustBe false
+      graphIds +:= rsp.id
+    }
+    "create a Toplist graph" in {
+      import Visualization.Toplist._
+      val g = graph(plot(text("avg:system.cpu.user{env:production}by{host}"))
+        .withRows(Descending, 20).aggregate(RankAggregator.Mean)
+        .withFormats(ConditionalFormat(GT, 123, Red on White)))
+      val request = CreateGraph(g)
+        .withTitle("Toplist Graph")
+        .withTimeframe(Timeframe.Hour4)
+        .withSize(GraphSize.Large)
+        .withLegend
+      val rsp = api.create(request).futureValue
+      rsp.id must not be empty
+      rsp.templateVariables mustBe empty
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "Toplist Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
     }

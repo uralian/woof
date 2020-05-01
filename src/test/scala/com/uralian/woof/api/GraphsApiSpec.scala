@@ -3,11 +3,15 @@ package com.uralian.woof.api
 import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.MetricAggregator._
 import com.uralian.woof.api.MetricQuery._
+import com.uralian.woof.api.SortDirection.Descending
 import com.uralian.woof.api.graphs.ColorPalette._
 import com.uralian.woof.api.graphs.DisplayType._
+import com.uralian.woof.api.graphs.FormatColor.{Red, White}
+import com.uralian.woof.api.graphs.FormatComparator.GT
 import com.uralian.woof.api.graphs.GraphDSL._
 import com.uralian.woof.api.graphs.GraphScale.Log
 import com.uralian.woof.api.graphs.LineType._
+import com.uralian.woof.api.graphs.RankAggregator.L2Norm
 import com.uralian.woof.api.graphs.Stroke._
 import com.uralian.woof.api.graphs._
 import org.json4s.JsonDSL._
@@ -261,6 +265,33 @@ class GraphsApiSpec extends AbstractUnitSpec {
       json mustBe ("viz" -> "distribution") ~ ("requests" -> List(
         ("q" -> "avg:system.cpu.user{env:qa}by{host}, avg:system.cpu.user{env:qa} by {host}/2") ~
           ("style" -> ("palette" -> "cool") ~ ("type" -> "solid") ~ ("width" -> "normal"))
+      ))
+    }
+  }
+
+  "ToplistPlot" should {
+    import Visualization.Toplist._
+    "produce a valid JSON" in {
+      val p = plot(text("avg:system.cpu.user{env:qa}by{host}"))
+        .withRows(Descending, 20).aggregate(L2Norm).withFormats(ConditionalFormat(GT, 123, Red on White))
+      val json = Extraction.decompose(p)
+      json mustBe ("conditional_formats" -> List(
+        ("comparator" -> ">") ~ ("value" -> JDecimal(123)) ~ ("palette" -> "red_on_white") ~ ("hide_value" -> false)
+      )) ~ ("q" -> "top(avg:system.cpu.user{env:qa}by{host}, 20, 'l2norm', 'desc')")
+    }
+  }
+
+  "ToplistDefinition" should {
+    import Visualization.Toplist._
+    "produce a valid JSON" in {
+      val g = graph(plot(text("avg:system.cpu.user{env:qa}by{host}"))
+        .withRows(Descending, 20).aggregate(L2Norm).withFormats(ConditionalFormat(GT, 123, Red on White)))
+      val json = Extraction.decompose(g)
+      json mustBe ("viz" -> "toplist") ~ ("requests" -> List(
+        ("q" -> "top(avg:system.cpu.user{env:qa}by{host}, 20, 'l2norm', 'desc')") ~
+          ("conditional_formats" -> List(
+            ("comparator" -> ">") ~ ("value" -> JDecimal(123)) ~ ("palette" -> "red_on_white") ~ ("hide_value" -> false)
+          ))
       ))
     }
   }

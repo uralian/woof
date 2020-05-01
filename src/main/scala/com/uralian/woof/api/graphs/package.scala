@@ -35,6 +35,8 @@ package object graphs {
     ScatterDefinition.serializer +
     DistributionPlot.serializer +
     DistributionDefinition.serializer +
+    ToplistPlot.serializer +
+    ToplistDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }

@@ -57,7 +57,12 @@ object Visualization extends Enum[Visualization] {
     def plot(queries: MetricQuery*) = DistributionPlot(queries)
   }
 
-  case object Toplist extends Visualization("toplist")
+  case object Toplist extends Visualization("toplist") {
+
+    def graph(plot: ToplistPlot) = ToplistDefinition(plot)
+
+    def plot(query: MetricQuery) = ToplistPlot(query)
+  }
 
   case object Change extends Visualization("change")
 
