@@ -3,6 +3,7 @@ package com.uralian.woof.api
 import com.uralian.woof.api.MetricQuery.CompoundQuery
 import enumeratum.EnumEntry.Lowercase
 import enumeratum._
+import org.json4s._
 
 /**
  * Metric aggregator used in queries.
@@ -69,19 +70,11 @@ sealed trait MetricQuery {
   def /(q2: MetricQuery) = combine("/")(q2)
 
   /**
-   * Combines this query with another one via ",".
-   *
-   * @param q2 second query.
-   * @return compound query that evaluates to string this.r,q2.r
-   */
-  def append(q2: MetricQuery) = combine(",")(q2)
-
-  /**
-   * Combines this query with another one via an arbitrary separator
+   * Combines this query with another one via an arbitrary separator.
    *
    * @param separator separator string.
    * @param q2        second query.
-   * @return compound query that evaluates to string this.r<separator>q2.r
+   * @return compound query that evaluates to string (this.r)(separator)(q2.r).
    */
   def combine(separator: String)(q2: MetricQuery) = CompoundQuery(this, separator, q2)
 }
@@ -115,7 +108,7 @@ object MetricQuery {
    * @param q2
    */
   final case class CompoundQuery(q1: MetricQuery, separator: String, q2: MetricQuery) extends MetricQuery {
-    val q: String = s"${q1.q} $separator ${q2.q}"
+    val q: String = s"${q1.q}$separator${q2.q}"
   }
 
   /**
@@ -151,11 +144,20 @@ object MetricQuery {
 
     def transform(f: String => String) = copy(func = func andThen f)
 
-    def wrapIn(fName: String, args: Any*) = transform(q => fName + "(" + q + args.mkString(",", ",", ")"))
+    def wrapIn(fName: String, args: Any*) =
+      transform(q => fName + "(" + q + args.map(x => "," + x).mkString + ")")
 
     private val groupClause = if (groupBy.isEmpty) "" else "by" + groupBy.mkString("{", ",", "}")
 
     val q: String = func(s"${aggregator.entryName}:$metric{$scope}$groupClause")
   }
 
+  /**
+   * JSON serializer for metric queries.
+   */
+  val serializer: CustomSerializer[MetricQuery] = new CustomSerializer[MetricQuery](_ => ( {
+    case JString(str) => text(str)
+  }, {
+    case query: MetricQuery => JString(query.q)
+  }))
 }

@@ -19,22 +19,19 @@ class MetricQuerySpec extends AbstractUnitSpec {
   "CompoundQuery" should {
     val q1: MetricQuery = "q1"
     "combine queries via +" in {
-      (q1 + "q2").q mustBe text("q1 + q2").q
+      (q1 + "q2").q mustBe text("q1+q2").q
     }
     "combine queries via -" in {
-      (q1 - "q2").q mustBe text("q1 - q2").q
+      (q1 - "q2").q mustBe text("q1-q2").q
     }
     "combine queries via *" in {
-      (q1 * "q2").q mustBe text("q1 * q2").q
+      (q1 * "q2").q mustBe text("q1*q2").q
     }
     "combine queries via /" in {
-      (q1 / "q2").q mustBe text("q1 / q2").q
-    }
-    "combine queries via ," in {
-      (q1 append "q2").q mustBe text("q1 , q2").q
+      (q1 / "q2").q mustBe text("q1/q2").q
     }
     "combine queries via arbitrary separator" in {
-      q1.combine("^")("q2").q mustBe text("q1 ^ q2").q
+      q1.combine("^")("q2").q mustBe text("q1^q2").q
     }
   }
 
@@ -59,7 +56,12 @@ class MetricQuerySpec extends AbstractUnitSpec {
       query mustBe QueryBuilder("system.cpu.user", groupBy = Seq(TagName("host"), TagName("env")))
       query.q mustBe "avg:system.cpu.user{*}by{host,env}"
     }
-    "wrap in a function" in {
+    "wrap in a function with no extra arguments" in {
+      val query = metric("system.cpu.user").filterBy("env:dev").groupBy("host")
+      val q2 = query.wrapIn("hour_before")
+      q2.q mustBe """hour_before(avg:system.cpu.user{env:dev}by{host})"""
+    }
+    "wrap in a function with extra arguments" in {
       val query = metric("system.cpu.user").filterBy("env:dev").groupBy("host")
       val q2 = query
         .wrapIn("top", 10, "'mean'", "'asc'")

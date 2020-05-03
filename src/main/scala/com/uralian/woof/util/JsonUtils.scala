@@ -48,6 +48,14 @@ trait JsonUtils {
   }: _*)
 
   /**
+   * Combines partial functions for individual fields to be ignored.
+   *
+   * @param names field names to ignore.
+   * @return a function ignoring any of the supplied field names.
+   */
+  def ignoreFields(names: String*): FSer = combine(names.map(name => FieldSerializer.ignore(name)): _*)
+
+  /**
    * Builds a field serializer for translating class field names between Scala and JSON.
    *
    * @param pairs collection of scalaName->jsonName mappings.
