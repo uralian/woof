@@ -2,6 +2,7 @@ package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
 import com.uralian.woof.api.graphs.ChangeOrder.Change
+import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.TimeBase.DayBefore
 import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
@@ -165,6 +166,23 @@ class GraphsHttpApiSpec extends AbstractITSpec {
       rsp.templateVariables mustBe empty
       rsp.html must (include("legend=true") and include("""width="800""""))
       rsp.title mustBe "Change Graph"
+      rsp.revoked mustBe false
+      graphIds +:= rsp.id
+    }
+    "create a Hostmap graph" in {
+      import Visualization.Hostmap._
+      val g = graph("system.load.1" -> MetricAggregator.Max, "system.mem.used" -> MetricAggregator.Sum)
+        .withPalette(YellowGreen).groupBy("env").hideNoMetricHosts
+      val request = CreateGraph(g)
+        .withTitle("Hostmap Graph")
+        .withTimeframe(Timeframe.Hour4)
+        .withSize(GraphSize.Large)
+        .withLegend
+      val rsp = api.create(request).futureValue
+      rsp.id must not be empty
+      rsp.templateVariables mustBe empty
+      rsp.html must (include("legend=true") and include("""width="800""""))
+      rsp.title mustBe "Hostmap Graph"
       rsp.revoked mustBe false
       graphIds +:= rsp.id
     }

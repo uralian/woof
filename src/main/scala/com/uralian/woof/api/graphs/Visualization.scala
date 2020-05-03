@@ -1,6 +1,6 @@
 package com.uralian.woof.api.graphs
 
-import com.uralian.woof.api.MetricQuery
+import com.uralian.woof.api.{MetricAggregator, MetricQuery}
 import enumeratum.{Enum, EnumEntry}
 
 /**
@@ -71,7 +71,12 @@ object Visualization extends Enum[Visualization] {
     def plot(metric: String) = ChangePlot(metric)
   }
 
-  case object Hostmap extends Visualization("hostmap")
+  case object Hostmap extends Visualization("hostmap") {
+
+    def graph(fill: (String, MetricAggregator)) = HostmapDefinition(fill)
+
+    def graph(fill: (String, MetricAggregator), size: (String, MetricAggregator)) = HostmapDefinition(fill, Some(size))
+  }
 
   val values = findValues
 }

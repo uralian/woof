@@ -11,6 +11,7 @@ import com.uralian.woof.api.graphs.FormatColor.{Red, White}
 import com.uralian.woof.api.graphs.FormatComparator.GT
 import com.uralian.woof.api.graphs.GraphDSL._
 import com.uralian.woof.api.graphs.GraphScale.Log
+import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.LineType._
 import com.uralian.woof.api.graphs.RankAggregator.L2Norm
 import com.uralian.woof.api.graphs.Stroke._
@@ -323,6 +324,31 @@ class GraphsApiSpec extends AbstractUnitSpec {
           ("increase_good" -> true) ~ ("change_type" -> "absolute") ~ ("extra_col" -> "present") ~
           ("q" -> "max:system.load.1{env:production}by{host}")
       ))
+    }
+  }
+
+  "HostmapDefinition" should {
+    import Visualization.Hostmap._
+    "produce a valid JSON for fill-only graph" in {
+      val g = graph("system.load.1" -> Max).withPalette(YellowGreen).withMin(5)
+        .filterBy("role:server").groupBy("env").hideNoMetricHosts.hideNoGroupHosts
+      val json = Extraction.decompose(g)
+      json mustBe ("viz" -> "hostmap") ~ ("nodeType" -> "host") ~
+        ("style" -> ("palette" -> "yellow_to_green") ~ ("paletteFlip" -> false) ~ ("fillMin" -> JDecimal(5))) ~
+        ("scope" -> List("role:server")) ~ ("group" -> List("env")) ~ ("requests" -> List(
+        ("q" -> "max:system.load.1{role:server}by{env}") ~ ("type" -> "fill")
+      )) ~ ("noGroupHosts" -> false) ~ ("noMetricHosts" -> false)
+    }
+    "produce a valid JSON for fill- and size- graphs" in {
+      val g = graph("system.load.1" -> Max, "system.cpu.user" -> Avg).withPalette(YellowGreen).withMin(5)
+        .filterBy("role:server").groupBy("env").hideNoMetricHosts.hideNoGroupHosts
+      val json = Extraction.decompose(g)
+      json mustBe ("viz" -> "hostmap") ~ ("nodeType" -> "host") ~
+        ("style" -> ("palette" -> "yellow_to_green") ~ ("paletteFlip" -> false) ~ ("fillMin" -> JDecimal(5))) ~
+        ("scope" -> List("role:server")) ~ ("group" -> List("env")) ~ ("requests" -> List(
+        ("q" -> "max:system.load.1{role:server}by{env}") ~ ("type" -> "fill"),
+        ("q" -> "avg:system.cpu.user{role:server}by{env}") ~ ("type" -> "size"),
+      )) ~ ("noGroupHosts" -> false) ~ ("noMetricHosts" -> false)
     }
   }
 

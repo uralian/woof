@@ -39,6 +39,8 @@ package object graphs {
     ToplistDefinition.serializer +
     ChangePlot.serializer +
     ChangeDefinition.serializer +
+    HostmapStyle.serializer +
+    HostmapDefinition.serializer +
     Graph.serializer +
     CreateGraph.serializer
 }

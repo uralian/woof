@@ -560,7 +560,7 @@ object ToplistDefinition {
  *
  * @param metric         metric name.
  * @param aggregator     metric aggregator.
- * @param filterBy       list of tags to filter by.
+ * @param scope          list of tags to filter by.
  * @param groupBy        list of tag names to group by.
  * @param compareTo      time base for comparison.
  * @param sortBy         sorting criteria.
@@ -571,7 +571,7 @@ object ToplistDefinition {
  */
 final case class ChangePlot(metric: String,
                             aggregator: MetricAggregator = MetricAggregator.Avg,
-                            filterBy: Seq[Tag] = Nil,
+                            scope: Seq[Tag] = Nil,
                             groupBy: Seq[TagName] = Nil,
                             compareTo: TimeBase = TimeBase.Default,
                             sortBy: ChangeOrder = ChangeOrder.Default,
@@ -582,7 +582,7 @@ final case class ChangePlot(metric: String,
 
   def aggregate(aggregator: MetricAggregator) = copy(aggregator = aggregator)
 
-  def filterBy(tags: Tag*) = copy(filterBy = filterBy ++ tags)
+  def filterBy(tags: Tag*) = copy(scope = scope ++ tags)
 
   def groupBy(names: String*): ChangePlot = copy(groupBy = groupBy ++ names.map(TagName.apply))
 
@@ -600,7 +600,7 @@ final case class ChangePlot(metric: String,
 
   def showPresent = copy(includePresent = true)
 
-  private val q = MetricQuery.metric(metric).aggregate(aggregator).filterBy(filterBy: _*)
+  private val q = MetricQuery.metric(metric).aggregate(aggregator).filterBy(scope: _*)
     .groupBy(groupBy.map(_.toString): _*)
 }
 
@@ -617,7 +617,7 @@ object ChangePlot {
   }
 
   val serializer = FieldSerializer[ChangePlot](combine(
-    ignoreFields("metric", "aggregator", "filterBy", "groupBy"),
+    ignoreFields("metric", "aggregator", "scope", "groupBy"),
     renameFieldsToJson("compareTo" -> "compare_to", "sortBy" -> "order_by", "sortDirection" -> "order_dir",
       "increaseGood" -> "increase_good"
     ),
@@ -642,5 +642,95 @@ object ChangeDefinition {
   val serializer = FieldSerializer[ChangeDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
     ignoreFields("plot")
+  ))
+}
+
+/**
+ * Hostmap graph style settings.
+ *
+ * @param palette color palette.
+ * @param flip    whether the palette needs to be switched.
+ * @param min     minimum value.
+ * @param max     maximum value.
+ */
+final case class HostmapStyle(palette: HostmapPalette = HostmapPalette.GreenOrange,
+                              flip: Boolean = false,
+                              min: Option[BigDecimal] = None,
+                              max: Option[BigDecimal] = None)
+
+/**
+ * Provides JSON serializer for [[HostmapStyle]].
+ */
+object HostmapStyle {
+  val serializer = translateFields[HostmapStyle]("flip" -> "paletteFlip", "min" -> "fillMin", "max" -> "fillMax")
+}
+
+/**
+ * Hostmap plot.
+ *
+ * @param `type` plot type ("fill" or "size").
+ * @param q      metric query.
+ */
+private[api] final case class HostmapPlot(`type`: String, q: MetricQuery) extends GraphPlot[Hostmap.type]
+
+/**
+ * Hostmap graph definition.
+ *
+ * @param fill          fill: metric name -> aggregator.
+ * @param size          size: metric name -> aggregator.
+ * @param scope         query scope.
+ * @param groupBy       metric grouping.
+ * @param style         graph style.
+ * @param noGroupHosts  whether to include hosts without grouping tags.
+ * @param noMetricHosts whether to include hosts without metric values.
+ */
+final case class HostmapDefinition(fill: (String, MetricAggregator),
+                                   size: Option[(String, MetricAggregator)] = None,
+                                   scope: Scope = Scope.All,
+                                   groupBy: Seq[TagName] = Nil,
+                                   style: HostmapStyle = HostmapStyle(),
+                                   noGroupHosts: Boolean = true,
+                                   noMetricHosts: Boolean = true)
+  extends GraphDefinition[Hostmap.type] {
+
+  private val nodeType = "host"
+
+  def filterBy(elements: ScopeElement*) = copy(scope = Scope.Filter(elements: _*))
+
+  def groupBy(names: String*) = copy(groupBy = groupBy ++ names.map(TagName.apply))
+
+  def withPalette(palette: HostmapPalette) = copy(style = style.copy(palette = palette))
+
+  def filpped = copy(style = style.copy(flip = true))
+
+  def withMin(num: BigDecimal) = copy(style = style.copy(min = Some(num)))
+
+  def withMax(num: BigDecimal) = copy(style = style.copy(max = Some(num)))
+
+  def hideNoGroupHosts = copy(noGroupHosts = false)
+
+  def hideNoMetricHosts = copy(noMetricHosts = false)
+
+  val visualization = Hostmap
+
+  val plots = List(HostmapPlot("fill", MetricQuery.QueryBuilder(fill._1, fill._2, scope, groupBy))) ++ size.map { sz =>
+    HostmapPlot("size", MetricQuery.QueryBuilder(sz._1, sz._2, scope, groupBy))
+  }
+}
+
+/**
+ * Factory for [[HostmapDefinition]] instances.
+ */
+object HostmapDefinition {
+  
+  private val customizeFields: FSer = {
+    case ("scope", Scope.All)       => Some("scope" -> JNull)
+    case ("scope", f: Scope.Filter) => Some("scope" -> f.elements)
+  }
+
+  val serializer = FieldSerializer[HostmapDefinition](combine(
+    renameFieldsToJson("visualization" -> "viz", "plots" -> "requests", "groupBy" -> "group"),
+    ignoreFields("fill", "size"),
+    customizeFields
   ))
 }
