@@ -44,7 +44,7 @@ trait EventsApi {
 class EventsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
   extends AbstractHttpApi(client) with EventsApi {
 
-  val path = "v1/events"
+  private val path = "v1/events"
 
   def create(data: CreateEvent): Future[Event] = apiPostJ[CreateEvent](path, data).map { json =>
     val event = (json \ "event").extract[Event]

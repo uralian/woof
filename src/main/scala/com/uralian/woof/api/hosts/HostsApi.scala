@@ -63,24 +63,26 @@ trait HostsApi {
 class HostsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
   extends AbstractHttpApi(client) with HostsApi {
 
-  val hostsPath = "v1/hosts"
-  val hostPath = "v1/host"
+  private object paths {
+    val hosts = "v1/hosts"
+    val host = "v1/host"
+  }
 
-  def search(query: HostQuery): Future[Seq[HostInfo]] = apiGetJ(hostsPath, query) map { json =>
+  def search(query: HostQuery): Future[Seq[HostInfo]] = apiGetJ(paths.hosts, query) map { json =>
     (json \ "host_list").extract[Seq[HostInfo]]
   }
 
   def totals(from: Instant = Instant.now minus DefaultTimeSpan): Future[HostTotals] =
-    apiGet[HostTotals](hostsPath + "/totals", "from" -> from.getEpochSecond)
+    apiGet[HostTotals](paths.hosts + "/totals", "from" -> from.getEpochSecond)
 
   def mute(host: String,
            message: Option[String] = None,
            until: Option[Instant] = None,
            overrideFlag: Boolean = false): Future[HostResponse] = {
     val request = MuteRequest(message, until, overrideFlag)
-    apiPost[MuteRequest, HostResponse](s"$hostPath/$host/mute", request, AddHeaders)
+    apiPost[MuteRequest, HostResponse](s"${paths.host}/$host/mute", request, AddHeaders)
   }
 
   def unmute(host: String): Future[HostResponse] =
-    apiPost[JValue, HostResponse](s"$hostPath/$host/unmute", JNothing, AddHeaders)
+    apiPost[JValue, HostResponse](s"${paths.host}/$host/unmute", JNothing, AddHeaders)
 }

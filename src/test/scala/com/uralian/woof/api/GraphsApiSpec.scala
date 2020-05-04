@@ -9,7 +9,6 @@ import com.uralian.woof.api.graphs.ColorPalette._
 import com.uralian.woof.api.graphs.DisplayType._
 import com.uralian.woof.api.graphs.FormatColor.{Red, White}
 import com.uralian.woof.api.graphs.FormatComparator.GT
-import com.uralian.woof.api.graphs.GraphDSL._
 import com.uralian.woof.api.graphs.GraphScale.Log
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.LineType._

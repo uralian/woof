@@ -19,7 +19,6 @@ class GraphsHttpApiSpec extends AbstractITSpec {
   import DisplayType._
   import FormatColor._
   import FormatComparator._
-  import GraphDSL._
   import GraphScale._
   import LineType._
   import MetricQuery._
