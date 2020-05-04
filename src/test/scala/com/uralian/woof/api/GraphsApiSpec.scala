@@ -401,4 +401,33 @@ class GraphsApiSpec extends AbstractUnitSpec {
       Serialization.read[Graph](embed.toString) mustBe embed
     }
   }
+
+  "CreateSnapshot" should {
+    "produce valid query params for metric query" in {
+      val to = currentTime()
+      val from = to.minusSeconds(3600 * 2)
+      val query = text("avg:system.load.1{*}by{host}")
+      val request = CreateSnapshot(query, from, to).withTitle("Sample")
+      val params = request.toParams
+      params.toSet mustBe Set(
+        "start" -> from.getEpochSecond,
+        "end" -> to.getEpochSecond,
+        "title" -> "Sample",
+        "metric_query" -> query.q
+      )
+    }
+    "produce valid query params for graph definition" in {
+      val to = currentTime()
+      val from = to.minusSeconds(3600 * 2)
+      val graph = Visualization.Hostmap.graph("system.load.1" -> Avg).groupBy("host")
+      val request = CreateSnapshot(graph, from, to).withTitle("Sample")
+      val params = request.toParams
+      params.toSet mustBe Set(
+        "start" -> from.getEpochSecond,
+        "end" -> to.getEpochSecond,
+        "title" -> "Sample",
+        "graph_def" -> Serialization.write(graph)
+      )
+    }
+  }
 }

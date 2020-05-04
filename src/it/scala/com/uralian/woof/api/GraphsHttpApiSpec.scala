@@ -206,5 +206,25 @@ class GraphsHttpApiSpec extends AbstractITSpec {
         rsp.futureValue mustBe true
       }
     }
+    "create Snapshot via metric query" in {
+      val query = metric("system.mem.used").groupBy("host")
+      val now = currentTime()
+      val request = CreateSnapshot(query, now.minusSeconds(3600), now).withTitle("my snapshot")
+      noException must be thrownBy api.createSnapshot(request).futureValue
+      api.createSnapshot(request).futureValue must not be null
+    }
+    "create Snapshot via graph definition" in {
+      import Visualization.Timeseries._
+      val g = graph(
+        plot(
+          metric("system.mem.used").groupBy("host").as("a"),
+          metric("system.mem.free").groupBy("host")
+        ).displayAs(Line).withPalette(Warm)
+      )
+      val now = currentTime()
+      val request = CreateSnapshot(g, now.minusSeconds(3600), now).withTitle("my snapshot")
+      noException must be thrownBy api.createSnapshot(request).futureValue
+      api.createSnapshot(request).futureValue must not be null
+    }
   }
 }

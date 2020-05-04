@@ -42,7 +42,8 @@ package object graphs {
     HostmapStyle.serializer +
     HostmapDefinition.serializer +
     Graph.serializer +
-    CreateGraph.serializer
+    CreateGraph.serializer +
+    CreateSnapshot.serializer
 
   /**
    * Adds functionality to MetricQuery.

@@ -1,5 +1,7 @@
 package com.uralian.woof.api.graphs
 
+import java.net.URL
+
 import com.uralian.woof.api.AbstractHttpApi
 import com.uralian.woof.http.Authenticator.AddHeaders
 import com.uralian.woof.http.DataDogClient
@@ -49,6 +51,14 @@ trait GraphsApi {
    * @return `true` if the operation was successful.
    */
   def revoke(graphId: String): Future[Boolean]
+
+  /**
+   * Creates a graph snapshot.
+   *
+   * @param request create request.
+   * @return a URL referencing a snapshot image.
+   */
+  def createSnapshot(request: CreateSnapshot): Future[URL]
 }
 
 /**
@@ -62,6 +72,7 @@ class GraphsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
 
   private object paths {
     val embed = s"v1/graph/embed"
+    val snapshot = s"v1/graph/snapshot"
   }
 
   def getAll(): Future[Seq[Graph]] = apiGetJ(paths.embed) map { json =>
@@ -78,5 +89,9 @@ class GraphsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
 
   def revoke(graphId: String): Future[Boolean] = apiGetJ(s"${paths.embed}/$graphId/revoke").map { json =>
     json.findField(_._1 == "success").isDefined
+  }
+
+  def createSnapshot(request: CreateSnapshot): Future[URL] = apiGetJ(paths.snapshot, request.toParams: _*).map { json =>
+    (json \ "snapshot_url").extract[URL]
   }
 }
