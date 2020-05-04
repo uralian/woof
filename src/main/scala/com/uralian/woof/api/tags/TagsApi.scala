@@ -64,7 +64,7 @@ trait TagsApi {
 class TagsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
   extends AbstractHttpApi(client) with TagsApi {
 
-  val path = "v1/tags/hosts"
+  private val path = "v1/tags/hosts"
 
   def getAll(): Future[Map[Tag, Seq[String]]] = apiGetJ(path) map { json =>
     val tags = json \ "tags"

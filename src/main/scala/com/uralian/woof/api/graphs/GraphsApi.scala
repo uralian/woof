@@ -1,5 +1,7 @@
 package com.uralian.woof.api.graphs
 
+import java.net.URL
+
 import com.uralian.woof.api.AbstractHttpApi
 import com.uralian.woof.http.Authenticator.AddHeaders
 import com.uralian.woof.http.DataDogClient
@@ -49,6 +51,14 @@ trait GraphsApi {
    * @return `true` if the operation was successful.
    */
   def revoke(graphId: String): Future[Boolean]
+
+  /**
+   * Creates a graph snapshot.
+   *
+   * @param request create request.
+   * @return a URL referencing a snapshot image.
+   */
+  def createSnapshot(request: CreateSnapshot): Future[URL]
 }
 
 /**
@@ -60,22 +70,28 @@ trait GraphsApi {
 class GraphsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
   extends AbstractHttpApi(client) with GraphsApi {
 
-  val basePath = "v1/graph"
-  val embedPath = s"$basePath/embed"
+  private object paths {
+    val embed = s"v1/graph/embed"
+    val snapshot = s"v1/graph/snapshot"
+  }
 
-  def getAll(): Future[Seq[Graph]] = apiGetJ(embedPath) map { json =>
+  def getAll(): Future[Seq[Graph]] = apiGetJ(paths.embed) map { json =>
     (json \ "embedded_graphs").extract[Seq[Graph]]
   }
 
-  def create(request: CreateGraph): Future[Graph] = apiPost[CreateGraph, Graph](embedPath, request, AddHeaders)
+  def create(request: CreateGraph): Future[Graph] = apiPost[CreateGraph, Graph](paths.embed, request, AddHeaders)
 
-  def get(graphId: String): Future[Graph] = apiGet[Graph](s"$embedPath/$graphId")
+  def get(graphId: String): Future[Graph] = apiGet[Graph](s"${paths.embed}/$graphId")
 
-  def enable(graphId: String): Future[Boolean] = apiGetJ(s"$embedPath/$graphId/enable").map { json =>
+  def enable(graphId: String): Future[Boolean] = apiGetJ(s"${paths.embed}/$graphId/enable").map { json =>
     json.findField(_._1 == "success").isDefined
   }
 
-  def revoke(graphId: String): Future[Boolean] = apiGetJ(s"$embedPath/$graphId/revoke").map { json =>
+  def revoke(graphId: String): Future[Boolean] = apiGetJ(s"${paths.embed}/$graphId/revoke").map { json =>
     json.findField(_._1 == "success").isDefined
+  }
+
+  def createSnapshot(request: CreateSnapshot): Future[URL] = apiGetJ(paths.snapshot, request.toParams: _*).map { json =>
+    (json \ "snapshot_url").extract[URL]
   }
 }

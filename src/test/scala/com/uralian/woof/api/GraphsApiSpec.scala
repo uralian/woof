@@ -9,7 +9,6 @@ import com.uralian.woof.api.graphs.ColorPalette._
 import com.uralian.woof.api.graphs.DisplayType._
 import com.uralian.woof.api.graphs.FormatColor.{Red, White}
 import com.uralian.woof.api.graphs.FormatComparator.GT
-import com.uralian.woof.api.graphs.GraphDSL._
 import com.uralian.woof.api.graphs.GraphScale.Log
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.LineType._
@@ -400,6 +399,35 @@ class GraphsApiSpec extends AbstractUnitSpec {
     "render toString as JSON" in {
       val embed = Graph("12345", Seq("a", "b"), "<iframe/>", "graph", true, Some("dash1"), None, Some(1234))
       Serialization.read[Graph](embed.toString) mustBe embed
+    }
+  }
+
+  "CreateSnapshot" should {
+    "produce valid query params for metric query" in {
+      val to = currentTime()
+      val from = to.minusSeconds(3600 * 2)
+      val query = text("avg:system.load.1{*}by{host}")
+      val request = CreateSnapshot(query, from, to).withTitle("Sample")
+      val params = request.toParams
+      params.toSet mustBe Set(
+        "start" -> from.getEpochSecond,
+        "end" -> to.getEpochSecond,
+        "title" -> "Sample",
+        "metric_query" -> query.q
+      )
+    }
+    "produce valid query params for graph definition" in {
+      val to = currentTime()
+      val from = to.minusSeconds(3600 * 2)
+      val graph = Visualization.Hostmap.graph("system.load.1" -> Avg).groupBy("host")
+      val request = CreateSnapshot(graph, from, to).withTitle("Sample")
+      val params = request.toParams
+      params.toSet mustBe Set(
+        "start" -> from.getEpochSecond,
+        "end" -> to.getEpochSecond,
+        "title" -> "Sample",
+        "graph_def" -> Serialization.write(graph)
+      )
     }
   }
 }

@@ -74,33 +74,37 @@ trait MetricsApi {
 class MetricsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
   extends AbstractHttpApi(client) with MetricsApi {
 
-  val metricPath = "v1/metrics"
-  val searchPath = "v1/search"
-  val seriesPath = "v1/series"
-  val queryPath = "v1/query"
+  private object paths {
+    val metric = "v1/metrics"
+    val search = "v1/search"
+    val series = "v1/series"
+    val query = "v1/query"
+  }
 
-  def getActiveMetrics(from: Instant, host: Option[String] = None): Future[Seq[String]] = apiGetJ(metricPath,
+  def getActiveMetrics(from: Instant, host: Option[String] = None): Future[Seq[String]] = apiGetJ(paths.metric,
     "from" -> from.getEpochSecond, "host" -> host) map { json =>
     (json \ "metrics").extract[Seq[String]]
   }
 
-  def searchMetrics(query: String): Future[Seq[String]] = apiGetJ(searchPath,
+  def searchMetrics(query: String): Future[Seq[String]] = apiGetJ(paths.search,
     "q" -> s"metrics:$query") map { json =>
     (json \ "results" \ "metrics").extract[Seq[String]]
   }
 
   def updateMetadata(metric: String, md: MetricMetadata): Future[MetricMetadata] =
-    apiPut[MetricMetadata, MetricMetadata](s"$metricPath/$metric", md)
+    apiPut[MetricMetadata, MetricMetadata](s"${paths.metric}/$metric", md)
 
-  def getMetadata(metric: String): Future[MetricMetadata] = apiGet[MetricMetadata](s"$metricPath/$metric")
+  def getMetadata(metric: String): Future[MetricMetadata] = apiGet[MetricMetadata](s"${paths.metric}/$metric")
 
   def createSeries(series: Seq[CreateSeries]): Future[Boolean] = {
-    apiPostJ(seriesPath, "series" -> series).map { json =>
+    apiPostJ(paths.series, "series" -> series).map { json =>
       (json \ "status").extract[String] == "ok"
     }
   }
 
-  def querySeries(query: MetricQuery, from: Instant, to: Instant = Instant.now): Future[Seq[Timeseries]] = apiGetJ(queryPath,
+  def querySeries(query: MetricQuery,
+                  from: Instant,
+                  to: Instant = Instant.now): Future[Seq[Timeseries]] = apiGetJ(paths.query,
     "query" -> query.q, "from" -> from.getEpochSecond, "to" -> to.getEpochSecond) map { json =>
     (json \ "series").extract[Seq[Timeseries]]
   }
