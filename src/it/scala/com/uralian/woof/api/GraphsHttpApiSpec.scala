@@ -1,6 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
+import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ChangeOrder.Change
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.TimeBase.DayBefore
@@ -46,7 +47,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
           metric("system.mem.total").groupBy("host").as("b")
         ).displayAs(Area).withStyle(Warm, Dashed, Thick),
         plot(
-          text("avg:system.cpu.user{*}by{host}").as("c")
+          direct("avg:system.cpu.user{*}by{host}").as("c")
         ).displayAs(Line)
       )
       val request = CreateGraph(g)
@@ -82,7 +83,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
     }
     "create Heatmap graph" in {
       import Visualization.Heatmap._
-      val g = graph(plot(text("avg:system.cpu.idle{*}by{host}"), text("avg:system.cpu.system{$var}by{host}")
+      val g = graph(plot(direct("avg:system.cpu.idle{*}by{host}"), direct("avg:system.cpu.system{$var}by{host}")
       ).withPalette(Cool)).withYAxis(scale = Sqrt, includeZero = false)
       val request = CreateGraph(g)
         .withTitle("Heatmap Graph")
@@ -118,7 +119,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
     }
     "create a Distribution graph" in {
       import Visualization.Distribution._
-      val g = graph(plot(text("avg:system.cpu.user{env:qa} by {host}")).withPalette(Cool))
+      val g = graph(plot(direct("avg:system.cpu.user{env:qa} by {host}")).withPalette(Cool))
       val request = CreateGraph(g)
         .withTitle("Distribution Graph")
         .withTimeframe(Timeframe.Hour4)
@@ -134,7 +135,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
     }
     "create a Toplist graph" in {
       import Visualization.Toplist._
-      val g = graph(plot(text("avg:system.cpu.user{env:production}by{host}"))
+      val g = graph(plot(direct("avg:system.cpu.user{env:production}by{host}"))
         .withRows(Descending, 20).aggregate(RankAggregator.Mean)
         .withFormats(ConditionalFormat(GT, 123, Red on White)))
       val request = CreateGraph(g)

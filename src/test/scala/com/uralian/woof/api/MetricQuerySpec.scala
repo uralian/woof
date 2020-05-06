@@ -1,6 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractUnitSpec
+import com.uralian.woof.api.dsl._
 
 /**
  * MetricQuery test suite.
@@ -12,26 +13,38 @@ class MetricQuerySpec extends AbstractUnitSpec {
 
   "FreeformQuery" should {
     "allow direct text query" in {
-      text("avg:system.cpu.user{$myvar}by{host}").q mustBe "avg:system.cpu.user{$myvar}by{host}"
+      direct("avg:system.cpu.user{$myvar}by{host}").q mustBe "avg:system.cpu.user{$myvar}by{host}"
     }
   }
 
-  "CompoundQuery" should {
+  "BinOpQuery" should {
     val q1: MetricQuery = "q1"
     "combine queries via +" in {
-      (q1 + "q2").q mustBe text("q1+q2").q
+      (q1 + "q2").q mustBe direct("q1+q2").q
     }
     "combine queries via -" in {
-      (q1 - "q2").q mustBe text("q1-q2").q
+      (q1 - "q2").q mustBe direct("q1-q2").q
     }
     "combine queries via *" in {
-      (q1 * "q2").q mustBe text("q1*q2").q
+      (q1 * "q2").q mustBe direct("q1*q2").q
     }
     "combine queries via /" in {
-      (q1 / "q2").q mustBe text("q1/q2").q
+      (q1 / "q2").q mustBe direct("q1/q2").q
     }
     "combine queries via arbitrary separator" in {
-      q1.combine("^")("q2").q mustBe text("q1^q2").q
+      q1.combine("^", "q2").q mustBe direct("q1^q2").q
+    }
+  }
+
+  "FuncQuery" should {
+    "provide a function without arguments" in {
+      function("sum")().q mustBe "sum()"
+    }
+    "provide a function with one argument" in {
+      function("sum")("123").q mustBe "sum(123)"
+    }
+    "provide a function with multiple arguments" in {
+      function("sum")("123", "avg:system.mem.free{*}", "'abc'").q mustBe "sum(123,avg:system.mem.free{*},'abc')"
     }
   }
 
@@ -55,23 +68,6 @@ class MetricQuerySpec extends AbstractUnitSpec {
       val query = metric("system.cpu.user").groupBy("host", "env")
       query mustBe QueryBuilder("system.cpu.user", groupBy = Seq(TagName("host"), TagName("env")))
       query.q mustBe "avg:system.cpu.user{*}by{host,env}"
-    }
-    "wrap in a function with no extra arguments" in {
-      val query = metric("system.cpu.user").filterBy("env:dev").groupBy("host")
-      val q2 = query.wrapIn("hour_before")
-      q2.q mustBe """hour_before(avg:system.cpu.user{env:dev}by{host})"""
-    }
-    "wrap in a function with extra arguments" in {
-      val query = metric("system.cpu.user").filterBy("env:dev").groupBy("host")
-      val q2 = query
-        .wrapIn("top", 10, "'mean'", "'asc'")
-        .wrapIn("bottom", 20, "'last'", "'desc'")
-      q2.q mustBe """bottom(top(avg:system.cpu.user{env:dev}by{host},10,'mean','asc'),20,'last','desc')"""
-    }
-    "apply transformation functions" in {
-      val query = metric("system.cpu.user").filterBy("client:abc").groupBy("host", "env")
-      val q2 = query.transform(q => "top(" + q + ")").transform(q => "bottom(" + q + ")")
-      q2.q mustBe "bottom(top(avg:system.cpu.user{client:abc}by{host,env}))"
     }
   }
 }

@@ -5,6 +5,7 @@ import java.time.Instant
 import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.metrics.MetricScale.{CountScale, GaugeScale, RateScale}
 import com.uralian.woof.api.metrics._
+import com.uralian.woof.api.dsl._
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._

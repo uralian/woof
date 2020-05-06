@@ -1,6 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
+import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.events.{AlertType, CreateEvent, EventQuery, EventsApi, EventsHttpApi, Priority}
 import com.uralian.woof.http.DataDogClient
 import com.uralian.woof.util.Retry

@@ -1,6 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractUnitSpec
+import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.tags._
 import org.json4s.JsonDSL._
 import org.json4s._

@@ -1,6 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
+import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.tags.{TagsApi, TagsHttpApi}
 import com.uralian.woof.http.DataDogClient
 

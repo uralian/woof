@@ -4,6 +4,7 @@ import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.MetricAggregator._
 import com.uralian.woof.api.MetricQuery._
 import com.uralian.woof.api.SortDirection.Descending
+import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ChangeOrder.Change
 import com.uralian.woof.api.graphs.ColorPalette._
 import com.uralian.woof.api.graphs.DisplayType._
@@ -28,7 +29,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
   "TimeseriesPlot" should {
     import Visualization.Timeseries._
     "produce valid JSON for a single query without alias" in {
-      val p = plot(metric("system.cpu.idle").filterBy("env" -> "qa")).withStyle(Warm, Dashed, Thin)
+      val p = plot(metric("system.cpu.idle") filterBy "env" -> "qa") withStyle(Warm, Dashed, Thin)
       val json = Extraction.decompose(p)
       json mustBe ("q" -> "avg:system.cpu.idle{env:qa}") ~ ("type" -> "line") ~ ("style" ->
         ("palette" -> "warm") ~ ("type" -> "dashed") ~ ("width" -> "thin")
@@ -62,7 +63,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
       val g = graph(
         plot(metric("system.cpu.idle").groupBy("host")),
         plot(metric("system.cpu.user").filterBy("env" -> "qa")),
-        plot(text("avg:system.cpu.user{*}by{host}"))
+        plot(direct("avg:system.cpu.user{*}by{host}"))
       ).withYAxis(scale = GraphScale.Log, max = Some(10), includeZero = false)
       val json = Extraction.decompose(g)
       val style = ("palette" -> "dog_classic") ~ ("type" -> "solid") ~ ("width" -> "normal")
@@ -110,7 +111,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
       import FormatColor._
       import FormatComparator._
       import QueryValueAggregator._
-      val p = QueryValuePlot(text("max:system.cpu.user")).aggregate(Last).withFormats(
+      val p = QueryValuePlot(direct("max:system.cpu.user")).aggregate(Last).withFormats(
         ConditionalFormat(LT, 3).withStandardColors(Green on White).withHiddenValue,
         ConditionalFormat(GT, 5).withCustomTextColor(0xFF0000)
       )
@@ -189,8 +190,11 @@ class GraphsApiSpec extends AbstractUnitSpec {
     import Visualization.Heatmap._
     "produce a valid JSON" in {
       val p = plot(
-        text("avg:system.cpu.user{$cluster} by {env}"),
-        metric("system.cpu.idle").wrapIn("timeshift", 600).filterBy("$var").groupBy("env")
+        direct("avg:system.cpu.user{$cluster} by {env}"),
+        function("timeshift")(
+          metric("system.cpu.idle").filterBy("$var").groupBy("env"),
+          "600"
+        )
       ).withPalette(Cool)
       val json = Extraction.decompose(p)
       json mustBe ("q" -> "avg:system.cpu.user{$cluster} by {env}, timeshift(avg:system.cpu.idle{$var}by{env},600)") ~
@@ -203,7 +207,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
     import GraphScale._
     import Visualization.Heatmap._
     "produce a valid JSON" in {
-      val g = graph(plot(text("avg:system.cpu.user{*}by{env}"), text("avg:system.cpu.idle{$var}by{env}")
+      val g = graph(plot(direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{$var}by{env}")
       ).withPalette(Cool)).withYAxis(scale = Sqrt, includeZero = false)
       val json = Extraction.decompose(g)
       json mustBe ("yaxis" -> ("scale" -> "sqrt") ~ ("includeZero" -> false)) ~ ("viz" -> "heatmap") ~
@@ -248,7 +252,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
     "produce a valid JSON" in {
       val p = plot(
         metric("system.cpu.user").aggregate(Avg).filterBy("env" -> "qa").groupBy("host"),
-        text("avg:system.cpu.user{env:qa} by {host}/2")
+        direct("avg:system.cpu.user{env:qa} by {host}/2")
       ).withPalette(Cool)
       val json = Extraction.decompose(p)
       json mustBe ("q" -> "avg:system.cpu.user{env:qa}by{host}, avg:system.cpu.user{env:qa} by {host}/2") ~
@@ -261,7 +265,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
     "produce a valid JSON" in {
       val g = graph(plot(
         metric("system.cpu.user").aggregate(Avg).filterBy("env" -> "qa").groupBy("host"),
-        text("avg:system.cpu.user{env:qa} by {host}/2")
+        direct("avg:system.cpu.user{env:qa} by {host}/2")
       ).withPalette(Cool))
       val json = Extraction.decompose(g)
       json mustBe ("viz" -> "distribution") ~ ("requests" -> List(
@@ -274,7 +278,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
   "ToplistPlot" should {
     import Visualization.Toplist._
     "produce a valid JSON" in {
-      val p = plot(text("avg:system.cpu.user{env:qa}by{host}"))
+      val p = plot(direct("avg:system.cpu.user{env:qa}by{host}"))
         .withRows(Descending, 20).aggregate(L2Norm).withFormats(ConditionalFormat(GT, 123, Red on White))
       val json = Extraction.decompose(p)
       json mustBe ("conditional_formats" -> List(
@@ -286,7 +290,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
   "ToplistDefinition" should {
     import Visualization.Toplist._
     "produce a valid JSON" in {
-      val g = graph(plot(text("avg:system.cpu.user{env:qa}by{host}"))
+      val g = graph(plot(direct("avg:system.cpu.user{env:qa}by{host}"))
         .withRows(Descending, 20).aggregate(L2Norm).withFormats(ConditionalFormat(GT, 123, Red on White)))
       val json = Extraction.decompose(g)
       json mustBe ("viz" -> "toplist") ~ ("requests" -> List(
@@ -354,8 +358,8 @@ class GraphsApiSpec extends AbstractUnitSpec {
   "CreateGraph" should {
     "produce valid payload" in {
       val request = CreateGraph(Visualization.Timeseries.graph(
-        Visualization.Timeseries.plot(text("avg:system.cpu.user{*}")),
-        Visualization.Timeseries.plot(text("avg:system.cpu.idle{*}"))))
+        Visualization.Timeseries.plot(direct("avg:system.cpu.user{*}")),
+        Visualization.Timeseries.plot(direct("avg:system.cpu.idle{*}"))))
         .withTitle("Sample Graph")
         .withTimeframe(Timeframe.Hour4)
         .withSize(GraphSize.XLarge)
@@ -406,7 +410,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
     "produce valid query params for metric query" in {
       val to = currentTime()
       val from = to.minusSeconds(3600 * 2)
-      val query = text("avg:system.load.1{*}by{host}")
+      val query = direct("avg:system.load.1{*}by{host}")
       val request = CreateSnapshot(query, from, to).withTitle("Sample")
       val params = request.toParams
       params.toSet mustBe Set(

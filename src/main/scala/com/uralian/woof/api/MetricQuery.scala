@@ -1,6 +1,6 @@
 package com.uralian.woof.api
 
-import com.uralian.woof.api.MetricQuery.CompoundQuery
+import com.uralian.woof.api.MetricQuery.BinOpQuery
 import enumeratum.EnumEntry.Lowercase
 import enumeratum._
 import org.json4s._
@@ -43,7 +43,7 @@ sealed trait MetricQuery {
    * @param q2 second query.
    * @return compound query that evaluates to string this.r+q2.r
    */
-  def +(q2: MetricQuery): CompoundQuery = combine("+")(q2)
+  def +(q2: MetricQuery): BinOpQuery = combine("+", q2)
 
   /**
    * Combines this query with another one via "-".
@@ -51,7 +51,7 @@ sealed trait MetricQuery {
    * @param q2 second query.
    * @return compound query that evaluates to string this.r-q2.r
    */
-  def -(q2: MetricQuery) = combine("-")(q2)
+  def -(q2: MetricQuery) = combine("-", q2)
 
   /**
    * Combines this query with another one via "*".
@@ -59,7 +59,7 @@ sealed trait MetricQuery {
    * @param q2 second query.
    * @return compound query that evaluates to string this.r*q2.r
    */
-  def *(q2: MetricQuery) = combine("*")(q2)
+  def *(q2: MetricQuery) = combine("*", q2)
 
   /**
    * Combines this query with another one via "/".
@@ -67,7 +67,7 @@ sealed trait MetricQuery {
    * @param q2 second query.
    * @return compound query that evaluates to string this.r/q2.r
    */
-  def /(q2: MetricQuery) = combine("/")(q2)
+  def /(q2: MetricQuery) = combine("/", q2)
 
   /**
    * Combines this query with another one via an arbitrary separator.
@@ -76,7 +76,15 @@ sealed trait MetricQuery {
    * @param q2        second query.
    * @return compound query that evaluates to string (this.r)(separator)(q2.r).
    */
-  def combine(separator: String)(q2: MetricQuery) = CompoundQuery(this, separator, q2)
+  def combine(separator: String, q2: MetricQuery) = BinOpQuery(this, separator, q2)
+
+  /**
+   * Adds an alias to metric query.
+   *
+   * @param alias query alias.
+   * @return a pair MetricQuery->Some(alias).
+   */
+  def as(alias: String): QueryWithAlias = this -> Some(alias)
 }
 
 /**
@@ -90,25 +98,54 @@ object MetricQuery {
    * @param str query string.
    * @return a new freeform query.
    */
-  def text(str: String) = FreeformQuery(str)
+  def direct(str: String): FreeformQuery = FreeformQuery(str)
 
   /**
    * Creates a new query builder based on the supplied metric.
    *
-   * @param name metric name.
+   * @param metricName metric name.
    * @return a new query builder.
    */
-  def metric(name: String) = QueryBuilder(metric = name)
+  def metric(metricName: String): QueryBuilder = QueryBuilder(metric = metricName)
+
+  /**
+   * Creates a function wrapper around a list of queries.
+   *
+   * @param fName   name of the function.
+   * @param queries function arguments.
+   * @return a new function query.
+   */
+  def function(fName: String)(queries: MetricQuery*): FuncQuery = FuncQuery(fName, queries: _*)
 
   /**
    * Combines two queries together via a separator, which can be "*", "/", etc.
+   * Examples:
+   * {{{
+   *   -  avg:system.mem.used{*} / avg:system.mem.total{*}
+   *   -  max:system.cpu.user * 100
+   * }}}
    *
-   * @param q1
-   * @param separator
-   * @param q2
+   * @param q1        first query.
+   * @param separator binary operator.
+   * @param q2        second query.
    */
-  final case class CompoundQuery(q1: MetricQuery, separator: String, q2: MetricQuery) extends MetricQuery {
+  final case class BinOpQuery(q1: MetricQuery, separator: String, q2: MetricQuery) extends MetricQuery {
     val q: String = s"${q1.q}$separator${q2.q}"
+  }
+
+  /**
+   * Creates a function with a list of arguments.
+   * Examples:
+   * {{{
+   *   - timeshift(avg:system.mem.free,100)
+   *   - sum(avg:system.mem.free,avg:system.mem.used)
+   * }}}
+   *
+   * @param fName   function name.
+   * @param queries arguments.
+   */
+  final case class FuncQuery(fName: String, queries: MetricQuery*) extends MetricQuery {
+    val q: String = fName + "(" + queries.map(_.q).mkString(",") + ")"
   }
 
   /**
@@ -127,14 +164,11 @@ object MetricQuery {
    * @param aggregator metric aggregator.
    * @param scope      query scope.
    * @param groupBy    groping criteria.
-   * @param func       transformation to apply to the rendered query, which allows furter customization to build queries
-   *                   like {{{function1(avg:system.cpu.user{env:qa}by{host}, arg1, arg2, ...)}}}
    */
   final case class QueryBuilder(metric: String,
                                 aggregator: MetricAggregator = MetricAggregator.Avg,
                                 scope: Scope = Scope.All,
-                                groupBy: Seq[TagName] = Nil,
-                                func: String => String = identity[String]) extends MetricQuery {
+                                groupBy: Seq[TagName] = Nil) extends MetricQuery {
 
     def aggregate(aggregator: MetricAggregator) = copy(aggregator = aggregator)
 
@@ -142,21 +176,16 @@ object MetricQuery {
 
     def groupBy(items: String*) = copy(groupBy = groupBy ++ items.map(TagName.apply))
 
-    def transform(f: String => String) = copy(func = func andThen f)
-
-    def wrapIn(fName: String, args: Any*) =
-      transform(q => fName + "(" + q + args.map(x => "," + x).mkString + ")")
-
     private val groupClause = if (groupBy.isEmpty) "" else "by" + groupBy.mkString("{", ",", "}")
 
-    val q: String = func(s"${aggregator.entryName}:$metric{$scope}$groupClause")
+    val q: String = s"${aggregator.entryName}:$metric{$scope}$groupClause"
   }
 
   /**
    * JSON serializer for metric queries.
    */
   val serializer: CustomSerializer[MetricQuery] = new CustomSerializer[MetricQuery](_ => ( {
-    case JString(str) => text(str)
+    case JString(str) => FreeformQuery(str)
   }, {
     case query: MetricQuery => JString(query.q)
   }))
