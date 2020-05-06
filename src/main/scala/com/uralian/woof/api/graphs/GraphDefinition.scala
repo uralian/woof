@@ -1,6 +1,5 @@
 package com.uralian.woof.api.graphs
 
-import com.uralian.woof.api
 import com.uralian.woof.api._
 import com.uralian.woof.api.graphs.Visualization._
 import com.uralian.woof.util.JsonUtils._
@@ -45,7 +44,7 @@ sealed trait GraphPlot[V <: Visualization]
  * @param lineType graph line style.
  * @param stroke   graph line stroke.
  */
-final case class TimeseriesPlot(queries: Seq[(MetricQuery, Option[String])],
+final case class TimeseriesPlot(queries: Seq[QueryWithAlias],
                                 display: DisplayType = DisplayType.Line,
                                 palette: ColorPalette = ColorPalette.Default,
                                 lineType: LineType = LineType.Default,
@@ -110,7 +109,7 @@ final case class TimeseriesDefinition(plots: Seq[TimeseriesPlot], yaxis: AxisOpt
  * Factory for [[TimeseriesDefinition]] instances.
  */
 object TimeseriesDefinition {
-  val serializer = translateFields[TimeseriesDefinition]("visualization" -> "viz", "plots" -> "requests")
+  val serializer: FieldSerializer[TimeseriesDefinition] = translateFields[TimeseriesDefinition]("visualization" -> "viz", "plots" -> "requests")
 }
 
 /**
@@ -209,24 +208,22 @@ final case class QueryTableColumn(metric: String,
   def withFormats(moreFormats: ConditionalFormat*) = copy(formats = formats ++ moreFormats)
 
   private[api] def toPlot(rows: Option[DataWindow], scope: Scope, groupBy: Seq[TagName]) = {
-    val query = MetricQuery.QueryBuilder(metric, aggregator, scope, groupBy, prefix + _ + suffix)
-    QueryTablePlot(query, rollup, rows, alias, formats)
+    val queryStr = prefix + MetricQuery.QueryBuilder(metric, aggregator, scope, groupBy).q + suffix
+    QueryTablePlot(MetricQuery.direct(queryStr) -> alias, rollup, rows, formats)
   }
 }
 
 /**
  * Query table plot.
  *
- * @param query      metric query.
+ * @param query      metric query with an optional alias.
  * @param aggregator aggregator.
  * @param rows       row selection.
- * @param alias      plot alias.
  * @param formats    conditional formats.
  */
-private[api] final case class QueryTablePlot(query: MetricQuery,
+private[api] final case class QueryTablePlot(query: QueryWithAlias,
                                              aggregator: QueryValueAggregator,
                                              rows: Option[DataWindow],
-                                             alias: Option[String],
                                              formats: Seq[ConditionalFormat]) extends GraphPlot[QueryTable.type]
 
 /**
@@ -239,8 +236,8 @@ private[api] object QueryTablePlot {
   val serializer: CustomSerializer[QueryTablePlot] = new CustomSerializer[QueryTablePlot](_ => ( {
     case _ => ??? //todo implement for Dashboard API responses
   }, {
-    case plot: QueryTablePlot => ("q" -> decompose(plot.query)) ~ ("aggregator" -> decompose(plot.aggregator)) ~
-      ("alias" -> decompose(plot.alias)) ~ ("conditional_formats" -> decompose(plot.formats)) merge decompose(plot.rows)
+    case plot: QueryTablePlot => ("q" -> decompose(plot.query._1)) ~ ("aggregator" -> decompose(plot.aggregator)) ~
+      ("alias" -> decompose(plot.query._2)) ~ ("conditional_formats" -> decompose(plot.formats)) merge decompose(plot.rows)
   }))
 }
 
@@ -385,8 +382,8 @@ final case class ScatterAxis(metric: String,
                   includeZero: Boolean = true): ScatterAxis = withOptions(AxisOptions(label, scale, min, max, includeZero))
 
   private[api] def toPlot(pointBy: Seq[TagName], colorBy: Seq[TagName]) = {
-    val query = MetricQuery.QueryBuilder(metric, aggregator, scope, pointBy ++ colorBy, prefix + _ + suffix)
-    ScatterPlot(query, rollup)
+    val queryStr = prefix + MetricQuery.QueryBuilder(metric, aggregator, scope, pointBy ++ colorBy).q + suffix
+    ScatterPlot(MetricQuery.direct(queryStr), rollup)
   }
 }
 
@@ -472,7 +469,7 @@ final case class DistributionPlot(queries: Seq[MetricQuery],
 object DistributionPlot {
 
   val serializer = FieldSerializer[DistributionPlot](serializer = {
-    case ("queries", queries: Seq[_])       => Some("q" -> queries.map(_.asInstanceOf[api.MetricQuery].q).mkString(", "))
+    case ("queries", queries: Seq[_])       => Some("q" -> queries.map(_.asInstanceOf[MetricQuery].q).mkString(", "))
     case ("palette", palette: ColorPalette) => Some("style" ->
       ("palette" -> palette.entryName) ~ ("type" -> "solid") ~ ("width" -> "normal")
     )
@@ -600,8 +597,7 @@ final case class ChangePlot(metric: String,
 
   def showPresent = copy(includePresent = true)
 
-  private val q = MetricQuery.metric(metric).aggregate(aggregator).filterBy(scope: _*)
-    .groupBy(groupBy.map(_.toString): _*)
+  private val q = MetricQuery.metric(metric).aggregate(aggregator).filterBy(scope: _*).groupBy(groupBy.map(_.toString): _*)
 }
 
 /**
@@ -722,7 +718,7 @@ final case class HostmapDefinition(fill: (String, MetricAggregator),
  * Factory for [[HostmapDefinition]] instances.
  */
 object HostmapDefinition {
-  
+
   private val customizeFields: FSer = {
     case ("scope", Scope.All)       => Some("scope" -> JNull)
     case ("scope", f: Scope.Filter) => Some("scope" -> f.elements)

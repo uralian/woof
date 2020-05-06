@@ -2,6 +2,7 @@ package com.uralian.woof.api
 
 import com.uralian.woof.AbstractUnitSpec
 import org.json4s._
+import com.uralian.woof.api.dsl._
 
 /**
  * API entities test suite.
