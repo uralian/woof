@@ -1,6 +1,6 @@
 package com.uralian.woof.api
 
-import java.time.Instant
+import java.time._
 
 import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.metrics.MetricScale.{CountScale, GaugeScale, RateScale}
@@ -10,8 +10,6 @@ import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.JsonMethods._
 import org.json4s.native.Serialization
-
-import scala.concurrent.duration._
 
 /**
  * MetricsApi test suite.
@@ -26,7 +24,7 @@ class MetricsApiSpec extends AbstractUnitSpec {
         .withDescription("Woof test metric")
         .withUnit("apples")
         .withPerUnit("oranges")
-        .withStatsDInterval(10 seconds)
+        .withStatsDInterval(Duration.ofSeconds(10))
       val json = Extraction.decompose(md)
       json mustBe ("type" -> "gauge") ~ ("short_name" -> "w.t.m") ~ ("description" -> "Woof test metric") ~
         ("unit" -> "apples") ~ ("per_unit" -> "oranges") ~ ("statsd_interval" -> JLong(10))
@@ -47,7 +45,7 @@ class MetricsApiSpec extends AbstractUnitSpec {
         .withDescription("Woof test metric")
         .withUnit("apples")
         .withPerUnit("oranges")
-        .withStatsDInterval(10 seconds)
+        .withStatsDInterval(Duration.ofSeconds(10))
       Serialization.read[MetricMetadata](md.toString) mustBe md
     }
   }
@@ -76,7 +74,7 @@ class MetricsApiSpec extends AbstractUnitSpec {
 
   "MetricScale" should {
     "serialize to JSON" in {
-      Extraction.decompose(CountScale(Some(30 seconds))) mustBe ("type" -> "count") ~ ("interval" -> JLong(30))
+      Extraction.decompose(CountScale(Some(Duration.ofSeconds(30)))) mustBe ("type" -> "count") ~ ("interval" -> JLong(30))
       Extraction.decompose(RateScale(None)) mustBe ("type" -> "rate") ~ ("interval" -> JNothing)
       Extraction.decompose(GaugeScale) mustBe JObject("type" -> JString("gauge"))
     }
@@ -99,7 +97,7 @@ class MetricsApiSpec extends AbstractUnitSpec {
     val now = currentTime()
     val minus5 = now minusSeconds 5
     val series = CreateSeries("woof.test.metric", List[Point](now -> 12.34, minus5 -> 0.5))
-      .asRate(30 seconds)
+      .asRate(Duration.ofSeconds(30))
       .withHost("uralian.test.host")
       .withTags("a" -> "b", "c" -> "d")
     "serialize to JSON" in {
@@ -156,7 +154,8 @@ class MetricsApiSpec extends AbstractUnitSpec {
       ts mustBe Timeseries("woof.test.metric",
         Instant.ofEpochMilli(1586779200000L),
         Instant.ofEpochMilli(1586822399000L),
-        43200 seconds, Seq("host" -> "uralian.test.host"), 1, 0, "avg",
+        Duration.ofSeconds(43200),
+        Seq("host" -> "uralian.test.host"), 1, 0, "avg",
         Scope.Filter("host" -> "uralian.test.host"),
         Seq(Instant.ofEpochMilli(1586779200000L) -> 10.535000006357828),
         "avg:woof.test.metric{host:uralian.test.host}",

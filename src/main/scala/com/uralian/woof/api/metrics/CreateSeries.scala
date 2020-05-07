@@ -1,12 +1,12 @@
 package com.uralian.woof.api.metrics
 
+import java.time.Duration
+
 import com.uralian.woof.api.Tag
 import com.uralian.woof.api.metrics.MetricScale._
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.Serialization
-
-import scala.concurrent.duration.Duration
 
 /**
  * A request to create a new metric series in DataDog.

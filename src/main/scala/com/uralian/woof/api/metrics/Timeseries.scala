@@ -1,13 +1,11 @@
 package com.uralian.woof.api.metrics
 
-import java.time.Instant
+import java.time.{Duration, Instant}
 
 import com.uralian.woof.api._
 import com.uralian.woof.util.JsonUtils
 import org.json4s.FieldSerializer
 import org.json4s.native.Serialization
-
-import scala.concurrent.duration.Duration
 
 /**
  * Timeseris data returned by DataDog.

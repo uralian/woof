@@ -1,11 +1,9 @@
 package com.uralian.woof.util
 
 import java.net.URL
-import java.time.Instant
+import java.time._
 
 import org.json4s._
-
-import scala.concurrent.duration._
 
 /**
  * JSON helper methods.
@@ -89,10 +87,10 @@ trait JsonUtils {
   }))
 
   val durationSerializerAsSeconds = new CustomSerializer[Duration](_ => ( {
-    case JLong(num) => num seconds
-    case JInt(num)  => num.toLong seconds
+    case JLong(num) => Duration.ofSeconds(num)
+    case JInt(num)  => Duration.ofSeconds(num.toLong)
   }, {
-    case d: Duration => JLong(d.toSeconds)
+    case d: Duration => JLong(d.getSeconds)
   }))
 
   val urlSerializer = new CustomSerializer[URL](_ => ( {

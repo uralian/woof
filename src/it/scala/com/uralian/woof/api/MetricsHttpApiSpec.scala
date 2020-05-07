@@ -1,12 +1,13 @@
 package com.uralian.woof.api
 
+import java.time.Duration
+
 import com.uralian.woof.AbstractITSpec
 import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.metrics._
 import com.uralian.woof.http.DataDogClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
 import scala.language.postfixOps
 
 /**
@@ -27,7 +28,7 @@ class MetricsHttpApiSpec extends AbstractITSpec {
       val minus5 = now minusSeconds 5
       val minus10 = now minusSeconds 10
       val series = CreateSeries("woof.test.metric", List[Point](now -> 5.5, minus5 -> 3.0, minus10 -> 1.5))
-        .asCount(30 seconds)
+        .asCount(Duration.ofSeconds(30))
         .withTags(ddTags: _*)
         .withHost(host)
       val rsp = api.createSeries(List(series)).futureValue
@@ -65,7 +66,7 @@ class MetricsHttpApiSpec extends AbstractITSpec {
         .withDescription("Woof test metric")
         .withUnit("operation")
         .withPerUnit("minute")
-        .withStatsDInterval(60 seconds)
+        .withStatsDInterval(Duration.ofSeconds(60))
       val rsp = api.updateMetadata("woof.test.metric", md).futureValue
       rsp mustBe md
     }
@@ -75,7 +76,7 @@ class MetricsHttpApiSpec extends AbstractITSpec {
         .withDescription("Woof test metric")
         .withUnit("operation")
         .withPerUnit("minute")
-        .withStatsDInterval(60 seconds)
+        .withStatsDInterval(Duration.ofSeconds(60))
     }
   }
 }

@@ -1,9 +1,9 @@
 package com.uralian.woof.api.metrics
 
+import java.time.Duration
+
 import com.uralian.woof.util.JsonUtils._
 import org.json4s.native.Serialization
-
-import scala.concurrent.duration.Duration
 
 /**
  * Metric metadata.
