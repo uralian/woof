@@ -121,12 +121,12 @@ final case class ConditionalFormat(comparator: FormatComparator,
  */
 object ConditionalFormat extends JsonUtils {
 
-  private val serCustom: FSer = {
+  private val ser: FSer = {
     case ("customTextColor", Some(color: Int))       => Some("custom_fg_color" -> ("#" + color.toHexString))
     case ("customBackgroundColor", Some(color: Int)) => Some("custom_bg_color" -> ("#" + color.toHexString))
     case ("imageUrl", Some(url: String))             => Some("image_url" -> url)
     case ("hideValue", hv)                           => Some("hide_value" -> hv)
   }
 
-  val serializer = FieldSerializer[ConditionalFormat](serializer = serCustom)
+  val serializer = FieldSerializer[ConditionalFormat](serializer = ser)
 }

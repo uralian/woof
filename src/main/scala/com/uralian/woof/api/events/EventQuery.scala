@@ -36,13 +36,10 @@ final case class EventQuery(start: Instant, end: Instant,
  */
 object EventQuery extends JsonUtils {
 
-  private val serTags: FSer = {
-    case ("tags", tags: Seq[_]) => Some("tags" -> tags.mkString(",")).filterNot(_._2.isEmpty)
-  }
-
-  private val serSources: FSer = {
+  private val ser: FSer = {
+    case ("tags", tags: Seq[_])       => Some("tags" -> tags.mkString(",")).filterNot(_._2.isEmpty)
     case ("sources", sources: Seq[_]) => Some("sources" -> sources.mkString(",")).filterNot(_._2.isEmpty)
   }
 
-  val serializer = FieldSerializer[EventQuery](serializer = combine(serTags, serSources))
+  val serializer = FieldSerializer[EventQuery](serializer = ser)
 }

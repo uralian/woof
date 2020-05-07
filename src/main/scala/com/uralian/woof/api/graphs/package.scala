@@ -44,20 +44,4 @@ package object graphs {
     Graph.serializer +
     CreateGraph.serializer +
     CreateSnapshot.serializer
-
-  /**
-   * Adds functionality to FormatColor.
-   *
-   * @param underlying format color.
-   */
-  implicit class RichFormatColor(val underlying: FormatColor) extends AnyVal {
-    /**
-     * Creates a standard format palette using current color for text and the argument for background.
-     *
-     * @param bgColor background color.
-     * @return standard format palette.
-     */
-    def on(bgColor: FormatColor): FormatPalette.Standard = FormatPalette.Standard(underlying, bgColor)
-  }
-
 }

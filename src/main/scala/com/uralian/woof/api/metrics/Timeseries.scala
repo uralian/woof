@@ -59,6 +59,6 @@ object Timeseries extends JsonUtils {
 
   val serializer = FieldSerializer[Timeseries](
     serializer = renameFieldsToJson(pairs: _*),
-    deserializer = renameFieldsFromJson(pairs.map(p => p._2 -> p._1): _*) orElse desStartStop
+    deserializer = combine(renameFieldsFromJson(pairs.map(p => p._2 -> p._1): _*), desStartStop)
   )
 }
