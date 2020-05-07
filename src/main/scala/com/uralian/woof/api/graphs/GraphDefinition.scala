@@ -438,7 +438,7 @@ object ScatterDefinition {
 
   import Extraction._
 
-  private val customizeFields: FSer = {
+  private val ser: FSer = {
     case ("plots", x :: y :: Nil) => Some("requests" -> ("x" -> decompose(x)) ~ ("y" -> decompose(y)))
     case ("x", x: ScatterAxis)    => Some("xaxis" -> decompose(x.options))
     case ("y", y: ScatterAxis)    => Some("yaxis" -> decompose(y.options))
@@ -447,7 +447,7 @@ object ScatterDefinition {
   val serializer = FieldSerializer[ScatterDefinition](combine(
     ignoreFields("pointBy"),
     renameFieldsToJson("colorBy" -> "color_by_groups", "visualization" -> "viz"),
-    customizeFields
+    ser
   ))
 }
 
@@ -468,13 +468,14 @@ final case class DistributionPlot(queries: Seq[MetricQuery],
  */
 object DistributionPlot {
 
-  val serializer = FieldSerializer[DistributionPlot](serializer = {
+  private val ser: FSer = {
     case ("queries", queries: Seq[_])       => Some("q" -> queries.map(_.asInstanceOf[MetricQuery].q).mkString(", "))
     case ("palette", palette: ColorPalette) => Some("style" ->
       ("palette" -> palette.entryName) ~ ("type" -> "solid") ~ ("width" -> "normal")
     )
   }
-  )
+
+  val serializer = FieldSerializer[DistributionPlot](serializer = ser)
 }
 
 /**
@@ -605,7 +606,7 @@ final case class ChangePlot(metric: String,
  */
 object ChangePlot {
 
-  private val customizeFields: FSer = {
+  private val ser: FSer = {
     case ("absolute", true)        => Some("change_type" -> "absolute")
     case ("absolute", false)       => Some("change_type" -> "relative")
     case ("includePresent", true)  => Some("extra_col" -> "present")
@@ -617,7 +618,7 @@ object ChangePlot {
     renameFieldsToJson("compareTo" -> "compare_to", "sortBy" -> "order_by", "sortDirection" -> "order_dir",
       "increaseGood" -> "increase_good"
     ),
-    customizeFields
+    ser
   ))
 }
 
@@ -719,7 +720,7 @@ final case class HostmapDefinition(fill: (String, MetricAggregator),
  */
 object HostmapDefinition {
 
-  private val customizeFields: FSer = {
+  private val ser: FSer = {
     case ("scope", Scope.All)       => Some("scope" -> JNull)
     case ("scope", f: Scope.Filter) => Some("scope" -> f.elements)
   }
@@ -727,6 +728,6 @@ object HostmapDefinition {
   val serializer = FieldSerializer[HostmapDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests", "groupBy" -> "group"),
     ignoreFields("fill", "size"),
-    customizeFields
+    ser
   ))
 }

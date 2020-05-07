@@ -13,6 +13,16 @@ class JsonUtilsSpec extends AbstractUnitSpec {
   import JsonUtilsSpec._
 
   "combine()" should {
+    "combine empty set of functions" in {
+      combine[Int, String]() mustBe PartialFunction.empty[Int, String]
+    }
+    "combine one function" in {
+      val pf1: PartialFunction[Int, String] = {
+        case 1 => "one"
+        case 5 => "five"
+      }
+      combine(pf1) mustBe pf1
+    }
     "combine partial functions" in {
       val pf1: PartialFunction[Int, String] = {
         case 1 => "one"

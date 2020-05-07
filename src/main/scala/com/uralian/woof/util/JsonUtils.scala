@@ -1,11 +1,9 @@
 package com.uralian.woof.util
 
 import java.net.URL
-import java.time.Instant
+import java.time._
 
 import org.json4s._
-
-import scala.concurrent.duration._
 
 /**
  * JSON helper methods.
@@ -23,9 +21,10 @@ trait JsonUtils {
    * @tparam B result type.
    * @return a union of the supplied partial functions.
    */
-  def combine[A, B](pfs: PartialFunction[A, B]*) = pfs.tail.foldLeft(pfs.head) { (acc, pf) =>
-    acc orElse pf
-  }
+  def combine[A, B](pfs: PartialFunction[A, B]*): PartialFunction[A, B] = if (pfs.isEmpty)
+    PartialFunction.empty[A, B]
+  else
+    pfs.tail.foldLeft(pfs.head) { (acc, pf) => acc orElse pf }
 
   /**
    * Combines partial functions for individual fields to be renamed.
@@ -58,14 +57,18 @@ trait JsonUtils {
   /**
    * Builds a field serializer for translating class field names between Scala and JSON.
    *
-   * @param pairs collection of scalaName->jsonName mappings.
+   * @param pairs collection of scalaName->jsonName mappings. If jsonName is null, the field is dropped.
    * @tparam T class type.
    * @return the field serializer.
    */
-  def translateFields[T: Manifest](pairs: (String, String)*) = FieldSerializer[T](
-    serializer = renameFieldsToJson(pairs: _*),
-    deserializer = renameFieldsFromJson(pairs.map(p => p._2 -> p._1): _*)
-  )
+  def translateFields[T: Manifest](pairs: (String, String)*): FieldSerializer[T] = {
+    val toRename = pairs filterNot (_._2 == null)
+    val toIgnore = pairs collect { case (name, null) => name }
+    FieldSerializer[T](
+      serializer = combine(renameFieldsToJson(toRename: _*), ignoreFields(toIgnore: _*)),
+      deserializer = renameFieldsFromJson(toRename.map(p => p._2 -> p._1): _*)
+    )
+  }
 
   /* common serializers */
 
@@ -84,10 +87,10 @@ trait JsonUtils {
   }))
 
   val durationSerializerAsSeconds = new CustomSerializer[Duration](_ => ( {
-    case JLong(num) => num seconds
-    case JInt(num)  => num.toLong seconds
+    case JLong(num) => Duration.ofSeconds(num)
+    case JInt(num)  => Duration.ofSeconds(num.toLong)
   }, {
-    case d: Duration => JLong(d.toSeconds)
+    case d: Duration => JLong(d.getSeconds)
   }))
 
   val urlSerializer = new CustomSerializer[URL](_ => ( {

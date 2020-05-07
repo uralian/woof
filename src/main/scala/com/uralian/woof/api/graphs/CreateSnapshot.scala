@@ -36,10 +36,10 @@ object CreateSnapshot extends JsonUtils {
   def apply(graph: GraphDefinition[_ <: Visualization], start: Instant, end: Instant): CreateSnapshot =
     apply(Right(graph), start, end)
 
-  private val customizeFields: FSer = {
+  private val ser: FSer = {
     case ("config", Left(query: MetricQuery))         => Some("metric_query" -> query.q)
     case ("config", Right(graph: GraphDefinition[_])) => Some("graph_def" -> Serialization.write(graph))
   }
 
-  val serializer = FieldSerializer[CreateSnapshot](serializer = customizeFields)
+  val serializer = FieldSerializer[CreateSnapshot](serializer = ser)
 }

@@ -1,10 +1,10 @@
 package com.uralian.woof.api.metrics
 
+import java.time.Duration
+
 import com.uralian.woof.api.metrics.MetricType._
 import org.json4s.JsonDSL._
 import org.json4s._
-
-import scala.concurrent.duration.Duration
 
 /**
  * A combination of metric type and interval (if applicable).

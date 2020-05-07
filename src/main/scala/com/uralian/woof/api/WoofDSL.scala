@@ -1,6 +1,10 @@
 package com.uralian.woof.api
 
+import java.time.Instant
+
 import com.uralian.woof.api.MetricQuery.FreeformQuery
+import com.uralian.woof.api.graphs.{FormatColor, FormatPalette}
+import com.uralian.woof.api.metrics.Point
 
 /**
  * DSL constructs.
@@ -43,6 +47,29 @@ trait WoofDSL {
    * @return a pair MetricQuery->None.
    */
   implicit def queryToQueryAlias(query: MetricQuery): QueryWithAlias = query -> None
+
+  /**
+   * Adds functionality to FormatColor.
+   *
+   * @param underlying format color.
+   */
+  implicit class RichFormatColor(val underlying: FormatColor) {
+    /**
+     * Creates a standard format palette using current color for text and the argument for background.
+     *
+     * @param bgColor background color.
+     * @return standard format palette.
+     */
+    def on(bgColor: FormatColor): FormatPalette.Standard = FormatPalette.Standard(underlying, bgColor)
+  }
+
+  /**
+   * Implicitly converts a tuple (Instant, Double) into a data Point.
+   *
+   * @param pair a tuple (time, value).
+   * @return a new data point.
+   */
+  implicit def pairToPoint(pair: (Instant, Double)): Point = Point(pair._1, BigDecimal(pair._2))
 }
 
 /**
