@@ -1,6 +1,6 @@
 package com.uralian.woof.api
 
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, TimeseriesDefinition, TimeseriesPlot}
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, DistributionDefinition, DistributionPlot, TimeseriesDefinition, TimeseriesPlot}
 import com.uralian.woof.util.JsonUtils
 import enumeratum.Json4s
 import org.json4s.FieldSerializer
@@ -50,12 +50,25 @@ package object dashboards extends JsonUtils {
   private val changeDefSerializer = translateFields[ChangeDefinition]("visualization" -> "type",
     "plots" -> "requests", "plot" -> null)
 
+  private val distPlotSerializer = {
+    val ser: FSer = {
+      case ("queries", queries: Seq[_])       => Some("q" -> queries.map(_.asInstanceOf[MetricQuery].q).mkString(", "))
+      case ("palette", palette: ColorPalette) => Some("style" -> ("palette" -> palette.entryName))
+    }
+    FieldSerializer[DistributionPlot](serializer = ser)
+  }
+
+  private val distDefSerializer = translateFields[DistributionDefinition]("visualization" -> "type",
+    "plots" -> "requests", "plot" -> null, "showLegend" -> "show_legend")
+
   implicit val dashboardFormats = apiFormats ++ com.uralian.woof.api.graphs.graphEnumSerializers +
     axisOptionsSerializer +
     tsPlotSerializer +
     tsDefSerializer +
     changePlotSerializer +
     changeDefSerializer +
+    distPlotSerializer +
+    distDefSerializer +
     Json4s.serializer(LayoutType) +
     Preset.serializer +
     Widget.serializer +

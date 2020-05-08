@@ -487,9 +487,17 @@ object DistributionPlot {
 /**
  * Distribution graph definition.
  *
- * @param plot distribution plot.
+ * @param plot       distribution plot.
+ * @param title      graph title (for dashboards).
+ * @param showLegend shows the legend (for screenboards only).
  */
-final case class DistributionDefinition(plot: DistributionPlot) extends GraphDefinition[Distribution.type] {
+final case class DistributionDefinition(plot: DistributionPlot,
+                                        title: Option[String] = None,
+                                        showLegend: Boolean = false) extends GraphDefinition[Distribution.type] {
+
+  def withTitle(title: String) = copy(title = Some(title))
+
+  def withLegend = copy(showLegend = true)
 
   val visualization = Distribution
 
@@ -502,7 +510,7 @@ final case class DistributionDefinition(plot: DistributionPlot) extends GraphDef
 object DistributionDefinition {
   val serializer = FieldSerializer[DistributionDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
-    ignoreFields("plot")
+    ignoreFields("plot", "showLegend")
   ))
 }
 
@@ -632,7 +640,7 @@ object ChangePlot {
  * Change graph definition.
  *
  * @param plot  change plot.
- * @param title graph title.
+ * @param title graph title (for dashboards).
  */
 final case class ChangeDefinition(plot: ChangePlot, title: Option[String] = None) extends GraphDefinition[Change.type] {
 

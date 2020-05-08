@@ -1,10 +1,10 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
-import com.uralian.woof.api.MetricQuery.direct
-import com.uralian.woof.api.dashboards.{CreateDashboard, DashboardsApi, DashboardsHttpApi, LayoutType, Preset, TemplateVar, Widget}
+import com.uralian.woof.api.MetricQuery._
+import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, DisplayType, GraphScale, TimeBase, Visualization}
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, DisplayType, GraphScale, TimeBase, Visualization}
 import com.uralian.woof.http.DataDogClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -57,6 +57,20 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
           .groupBy("host").compareTo(TimeBase.DayBefore)
           .sortBy(ChangeOrder.Change, SortDirection.Descending).showPresent
       ).withTitle("graph2"))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
+    "create Distribution widgets" in {
+      import Visualization.Distribution._
+      val w1 = Widget.Ordered(graph(plot(metric("system.cpu.user").aggregate(MetricAggregator.Avg)
+        .filterBy("env" -> "qa").groupBy("host"),
+        direct("avg:system.cpu.user{env:qa} by {host}/2")
+      ).withPalette(ColorPalette.Cool)).withTitle("graph2"))
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val rsp = api.create(request).futureValue
       rsp.id must not be null
