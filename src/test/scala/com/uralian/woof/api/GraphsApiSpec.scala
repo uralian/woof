@@ -64,7 +64,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
         plot(metric("system.cpu.idle").groupBy("host")),
         plot(metric("system.cpu.user").filterBy("env" -> "qa")),
         plot(direct("avg:system.cpu.user{*}by{host}"))
-      ).withYAxis(scale = GraphScale.Log, max = Some(10), includeZero = false)
+      ).withYAxis(AxisOptions(scale = GraphScale.Log, max = Some(10), includeZero = false))
       val json = Extraction.decompose(g)
       val style = ("palette" -> "dog_classic") ~ ("type" -> "solid") ~ ("width" -> "normal")
       json mustBe ("requests" -> List(

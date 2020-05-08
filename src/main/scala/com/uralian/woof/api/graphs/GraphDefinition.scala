@@ -1,6 +1,7 @@
 package com.uralian.woof.api.graphs
 
 import com.uralian.woof.api._
+import com.uralian.woof.api.dashboards.WidgetContent
 import com.uralian.woof.api.graphs.Visualization._
 import com.uralian.woof.util.JsonUtils._
 import org.json4s.JsonDSL._
@@ -11,7 +12,7 @@ import org.json4s._
  *
  * @tparam V visualization type.
  */
-sealed trait GraphDefinition[V <: Visualization] {
+sealed trait GraphDefinition[V <: Visualization] extends WidgetContent {
 
   /**
    * Graph visualization type (Timeseries, Table, Heatmap etc.)
@@ -89,27 +90,32 @@ object TimeseriesPlot {
 /**
  * Timeseries graph definition.
  *
- * @param plots plots.
- * @param yaxis Y-axis options.
+ * @param plots      plots.
+ * @param yaxis      Y-axis options.
+ * @param title      graph title (for dashboards).
+ * @param showLegend shows the legend (for screenboards only).
  */
-final case class TimeseriesDefinition(plots: Seq[TimeseriesPlot], yaxis: AxisOptions = AxisOptions.Default)
+final case class TimeseriesDefinition(plots: Seq[TimeseriesPlot],
+                                      yaxis: AxisOptions = AxisOptions.Default,
+                                      title: Option[String] = None,
+                                      showLegend: Boolean = false)
   extends GraphDefinition[Timeseries.type] {
 
   val visualization = Timeseries
 
-  def withYAxis(axis: AxisOptions): TimeseriesDefinition = copy(yaxis = axis)
+  def withTitle(title: String) = copy(title = Some(title))
 
-  def withYAxis(scale: GraphScale = GraphScale.Default,
-                min: Option[BigDecimal] = None,
-                max: Option[BigDecimal] = None,
-                includeZero: Boolean = true): TimeseriesDefinition = withYAxis(AxisOptions(None, scale, min, max, includeZero))
+  def withLegend = copy(showLegend = true)
+
+  def withYAxis(axis: AxisOptions): TimeseriesDefinition = copy(yaxis = axis)
 }
 
 /**
  * Factory for [[TimeseriesDefinition]] instances.
  */
 object TimeseriesDefinition {
-  val serializer: FieldSerializer[TimeseriesDefinition] = translateFields[TimeseriesDefinition]("visualization" -> "viz", "plots" -> "requests")
+  val serializer = translateFields[TimeseriesDefinition]("visualization" -> "viz", "plots" -> "requests",
+    "showLegend" -> null)
 }
 
 /**
@@ -625,9 +631,13 @@ object ChangePlot {
 /**
  * Change graph definition.
  *
- * @param plot change plot.
+ * @param plot  change plot.
+ * @param title graph title.
  */
-final case class ChangeDefinition(plot: ChangePlot) extends GraphDefinition[Change.type] {
+final case class ChangeDefinition(plot: ChangePlot, title: Option[String] = None) extends GraphDefinition[Change.type] {
+
+  def withTitle(title: String) = copy(title = Some(title))
+
   val visualization = Change
   val plots = Seq(plot)
 }
