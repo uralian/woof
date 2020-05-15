@@ -4,7 +4,9 @@ import com.uralian.woof.AbstractITSpec
 import com.uralian.woof.api.MetricQuery._
 import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, DisplayType, GraphScale, TimeBase, Visualization}
+import com.uralian.woof.api.graphs.ColorPalette.Cool
+import com.uralian.woof.api.graphs.GraphScale.Sqrt
+import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -71,6 +73,19 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
         .filterBy("env" -> "qa").groupBy("host"),
         direct("avg:system.cpu.user{env:qa} by {host}/2")
       ).withPalette(ColorPalette.Cool)).withTitle("graph2"))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
+    "create Heatmap widgets" in {
+      import Visualization.Heatmap._
+      val w1 = Widget.Ordered(graph(plot(
+        direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{*}by{env}")
+      ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false)))
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val rsp = api.create(request).futureValue
       rsp.id must not be null

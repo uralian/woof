@@ -324,18 +324,21 @@ object HeatmapPlot {
 /**
  * Heatmap graph definition.
  *
- * @param plot  heatmap plot.
- * @param yaxis Y-axis options.
+ * @param plot       heatmap plot.
+ * @param yaxis      Y-axis options.
+ * @param title      graph title (for dashboards).
+ * @param showLegend show graph legend (for screenboards only)
  */
 final case class HeatmapDefinition(plot: HeatmapPlot,
-                                   yaxis: AxisOptions = AxisOptions.Default) extends GraphDefinition[Heatmap.type] {
+                                   yaxis: AxisOptions = AxisOptions.Default,
+                                   title: Option[String] = None,
+                                   showLegend: Boolean = false) extends GraphDefinition[Heatmap.type] {
 
   def withYAxis(axis: AxisOptions): HeatmapDefinition = copy(yaxis = axis)
 
-  def withYAxis(scale: GraphScale = GraphScale.Default,
-                min: Option[BigDecimal] = None,
-                max: Option[BigDecimal] = None,
-                includeZero: Boolean = true): HeatmapDefinition = withYAxis(AxisOptions(None, scale, min, max, includeZero))
+  def withTitle(title: String) = copy(title = Some(title))
+
+  def withLegend = copy(showLegend = true)
 
   val visualization = Heatmap
 
@@ -348,7 +351,7 @@ final case class HeatmapDefinition(plot: HeatmapPlot,
 object HeatmapDefinition {
   val serializer = FieldSerializer[HeatmapDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
-    ignoreFields("plot")
+    ignoreFields("plot", "showLegend")
   ))
 }
 

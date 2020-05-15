@@ -84,7 +84,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
     "create Heatmap graph" in {
       import Visualization.Heatmap._
       val g = graph(plot(direct("avg:system.cpu.idle{*}by{host}"), direct("avg:system.cpu.system{$var}by{host}")
-      ).withPalette(Cool)).withYAxis(scale = Sqrt, includeZero = false)
+      ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false))
       val request = CreateGraph(g)
         .withTitle("Heatmap Graph")
         .withTimeframe(Timeframe.Hour4)

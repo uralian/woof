@@ -208,7 +208,7 @@ class GraphsApiSpec extends AbstractUnitSpec {
     import Visualization.Heatmap._
     "produce a valid JSON" in {
       val g = graph(plot(direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{$var}by{env}")
-      ).withPalette(Cool)).withYAxis(scale = Sqrt, includeZero = false)
+      ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false))
       val json = Extraction.decompose(g)
       json mustBe ("yaxis" -> ("scale" -> "sqrt") ~ ("includeZero" -> false)) ~ ("viz" -> "heatmap") ~
         ("requests" -> List(

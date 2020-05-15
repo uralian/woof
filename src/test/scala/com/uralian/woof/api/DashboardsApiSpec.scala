@@ -5,6 +5,8 @@ import java.time.ZoneOffset
 import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
+import com.uralian.woof.api.graphs.ColorPalette.Cool
+import com.uralian.woof.api.graphs.GraphScale.Sqrt
 import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, DisplayType, GraphScale, TimeBase, Visualization}
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -16,6 +18,10 @@ import org.json4s.native.Serialization
 class DashboardsApiSpec extends AbstractUnitSpec {
 
   import MetricQuery._
+
+  private val defaultJson = ("title" -> "Sample") ~ ("layout_type" -> "ordered") ~ ("is_read_only" -> false) ~
+    ("template_variables" -> List.empty[JValue]) ~ ("template_variable_presets" -> List.empty[JValue]) ~
+    ("notify_list" -> List.empty[JValue])
 
   "CreateDashboard" should {
     "produce a valid payload for Timeseries for Ordered layout" in {
@@ -95,13 +101,12 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       ).withTitle("graph2"))
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val json = Extraction.decompose(request)
-      json mustBe ("title" -> "Sample") ~ ("layout_type" -> "ordered") ~ ("widgets" -> List[JValue](
+      checkJson(json, ("widgets" -> List[JValue](
         ("definition" -> ("title" -> "graph2") ~ ("type" -> "change") ~ ("requests" -> List[JValue](
           ("compare_to" -> "day_before") ~ ("order_by" -> "change") ~ ("order_dir" -> "desc") ~
             ("increase_good" -> true) ~ ("change_type" -> "absolute") ~ ("show_present" -> true) ~
             ("q" -> "sum:system.load.1{env:staging}by{host}"))))
-      )) ~ ("is_read_only" -> false) ~ ("notify_list" -> List.empty[JValue]) ~
-        ("template_variables" -> List.empty[JValue]) ~ ("template_variable_presets" -> List.empty[JValue])
+      )))
     }
     "produce a valid payload for Distribution" in {
       import Visualization.Distribution._
@@ -111,14 +116,27 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       ).withPalette(ColorPalette.Cool)).withTitle("graph2"))
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val json = Extraction.decompose(request)
-      json mustBe ("title" -> "Sample") ~ ("layout_type" -> "ordered") ~ ("widgets" -> List[JValue](
+      checkJson(json, ("widgets" -> List[JValue](
         ("definition" -> ("title" -> "graph2") ~ ("show_legend" -> false) ~ ("type" -> "distribution") ~
           ("requests" -> List[JValue](
             ("q" -> "avg:system.cpu.user{env:qa}by{host}, avg:system.cpu.user{env:qa} by {host}/2") ~
               ("style" -> ("palette" -> "cool"))
           )))
-      )) ~ ("is_read_only" -> false) ~ ("notify_list" -> List.empty[JValue]) ~
-        ("template_variables" -> List.empty[JValue]) ~ ("template_variable_presets" -> List.empty[JValue])
+      )))
+    }
+    "produce a valid payload for Heatmap" in {
+      import Visualization.Heatmap._
+      val w1 = Widget.Ordered(graph(plot(
+        direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{$var}by{env}")
+      ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false)))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val json = Extraction.decompose(request)
+      checkJson(json, ("widgets" -> List[JValue](
+        ("definition" -> ("yaxis" -> ("scale" -> "sqrt") ~ ("include_zero" -> false)) ~ ("show_legend" -> false) ~
+          ("type" -> "heatmap") ~ ("requests" -> List[JValue](
+          ("q" -> "avg:system.cpu.user{*}by{env}, avg:system.cpu.idle{$var}by{env}") ~ ("style" -> ("palette" -> "cool"))
+        )))
+      )))
     }
   }
 
@@ -216,4 +234,6 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       dashboard.presets mustBe List(Preset("qa", Map("env" -> "qa")))
     }
   }
+
+  private def checkJson(json: JValue, expected: JValue) = json mustBe expected.merge(defaultJson)
 }
