@@ -94,6 +94,29 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
       rsp.description mustBe empty
       dashboardIds +:= rsp.id
     }
+    "create Group widgets" in {
+      val w1 = Widget.Ordered(Visualization.Heatmap.graph(Visualization.Heatmap.plot(
+        direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{*}by{env}")
+      ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false)))
+      val w2 = Widget.Ordered(Visualization.Distribution.graph(Visualization.Distribution.plot(
+        metric("system.cpu.user").aggregate(MetricAggregator.Avg)
+          .filterBy("env" -> "qa").groupBy("host"),
+        direct("avg:system.cpu.user{env:qa} by {host}/2")
+      ).withPalette(ColorPalette.Cool)).withTitle("graph2"))
+      val w3 = Widget.Ordered(Visualization.Change.graph(
+        Visualization.Change.plot("system.load.1").aggregate(MetricAggregator.Sum).filterBy("env" -> "staging")
+          .groupBy("host").compareTo(TimeBase.DayBefore)
+          .sortBy(ChangeOrder.Change, SortDirection.Descending).showPresent
+      ).withTitle("graph2"))
+      val w = Widget.Ordered(WidgetGroup(List(w1, w2, w3)).withTitle("my_group"))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w))
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
     "delete dashboards" in {
       dashboardIds map api.delete foreach { rsp =>
         rsp.futureValue mustBe true

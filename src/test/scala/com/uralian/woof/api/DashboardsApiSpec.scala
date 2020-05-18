@@ -138,6 +138,32 @@ class DashboardsApiSpec extends AbstractUnitSpec {
         )))
       )))
     }
+    "produce a valid payload for Group" in {
+      val w1 = Widget.Ordered(Visualization.Heatmap.graph(Visualization.Heatmap.plot(
+        direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{$var}by{env}")
+      ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false)))
+      val w2 = Widget.Ordered(Visualization.Distribution.graph(Visualization.Distribution.plot(
+        metric("system.cpu.user").aggregate(MetricAggregator.Avg)
+          .filterBy("env" -> "qa").groupBy("host"),
+        direct("avg:system.cpu.user{env:qa} by {host}/2")
+      ).withPalette(ColorPalette.Cool)).withTitle("graph2"))
+      val w = Widget.Ordered(WidgetGroup(Seq(w1, w2), Some("my_group")))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w))
+      val json = Extraction.decompose(request)
+      val jw1: JValue = ("definition" -> ("yaxis" -> ("scale" -> "sqrt") ~ ("include_zero" -> false)) ~
+        ("show_legend" -> false) ~ ("type" -> "heatmap") ~ ("requests" -> List[JValue](
+        ("q" -> "avg:system.cpu.user{*}by{env}, avg:system.cpu.idle{$var}by{env}") ~ ("style" -> ("palette" -> "cool"))
+      )))
+      val jw2: JValue = ("definition" -> ("title" -> "graph2") ~ ("show_legend" -> false) ~ ("type" -> "distribution") ~
+        ("requests" -> List[JValue](
+          ("q" -> "avg:system.cpu.user{env:qa}by{host}, avg:system.cpu.user{env:qa} by {host}/2") ~
+            ("style" -> ("palette" -> "cool"))
+        )))
+      checkJson(json, "widgets" -> List[JValue](
+        ("definition" -> ("title" -> "my_group") ~ ("type" -> "group") ~ ("layout_type" -> "ordered") ~
+          ("widgets" -> List[JValue](jw1, jw2)))
+      ))
+    }
   }
 
   "Dashboard" should {
