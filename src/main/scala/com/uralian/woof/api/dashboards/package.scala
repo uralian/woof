@@ -1,10 +1,10 @@
 package com.uralian.woof.api
 
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, DistributionDefinition, DistributionPlot, HeatmapDefinition, HeatmapPlot, TimeseriesDefinition, TimeseriesPlot}
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, DistributionDefinition, DistributionPlot, HeatmapDefinition, HeatmapPlot, HostmapDefinition, HostmapPlot, HostmapStyle, TimeseriesDefinition, TimeseriesPlot}
 import com.uralian.woof.util.JsonUtils
 import enumeratum.Json4s
-import org.json4s.FieldSerializer
 import org.json4s.JsonDSL._
+import org.json4s.{FieldSerializer, JNull}
 
 /**
  * Helper methods and types for Dashboards API.
@@ -72,6 +72,36 @@ package object dashboards extends JsonUtils {
   private val heatDefSerializer = translateFields[HeatmapDefinition]("visualization" -> "type",
     "plots" -> "requests", "plot" -> null, "showLegend" -> "show_legend")
 
+  private val hostmapStyleSerializer = {
+    val ser: FSer = {
+      case ("min", Some(min)) => Some("fill_min" -> min.toString)
+      case ("max", Some(max)) => Some("fill_max" -> max.toString)
+    }
+    FieldSerializer[HostmapStyle](combine(
+      renameFieldsToJson("flip" -> "palette_flip"),
+      ser
+    ))
+  }
+
+  private val hostmapDefSerializer = {
+    val ser: FSer = {
+      case ("scope", Scope.All)                                         => Some("scope" -> JNull)
+      case ("scope", f: Scope.Filter)                                   => Some("scope" -> f.elements)
+      case ("plots", (fill: HostmapPlot) :: (size: HostmapPlot) :: Nil) => Some("requests" ->
+        Map("fill" -> Map("q" -> fill.q), "size" -> Map("q" -> size.q))
+      )
+      case ("plots", (fill: HostmapPlot) :: Nil)                        => Some("requests" ->
+        Map("fill" -> Map("q" -> fill.q))
+      )
+    }
+    FieldSerializer[HostmapDefinition](combine(
+      renameFieldsToJson("visualization" -> "type", "groupBy" -> "group",
+        "noGroupHosts" -> "no_group_hosts", "noMetricHosts" -> "no_metric_hosts", "nodeType" -> "node_type"),
+      ignoreFields("fill", "size"),
+      ser
+    ))
+  }
+
   implicit val dashboardFormats = apiFormats ++ com.uralian.woof.api.graphs.graphEnumSerializers +
     axisOptionsSerializer +
     tsPlotSerializer +
@@ -82,6 +112,8 @@ package object dashboards extends JsonUtils {
     distDefSerializer +
     heatPlotSerializer +
     heatDefSerializer +
+    hostmapStyleSerializer +
+    hostmapDefSerializer +
     Json4s.serializer(LayoutType) +
     Preset.serializer +
     Widget.serializer +

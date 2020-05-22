@@ -6,6 +6,7 @@ import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
 import com.uralian.woof.api.graphs.GraphScale.Sqrt
+import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
 
@@ -94,6 +95,27 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
       rsp.description mustBe empty
       dashboardIds +:= rsp.id
     }
+    "create Hostmap widgets" in {
+      import Visualization.Hostmap._
+      val w1 = Widget.Ordered(graph(
+        "system.cpu.user" -> MetricAggregator.Max, "system.mem.total" -> MetricAggregator.Avg)
+        .withPalette(YellowGreen)
+        .withMin(5)
+        .filterBy("env:qa")
+        .groupBy("region")
+        .hideNoMetricHosts
+        .hideNoGroupHosts
+        .flipped
+      )
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      println(request)
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
     "create Group widgets" in {
       val w1 = Widget.Ordered(Visualization.Heatmap.graph(Visualization.Heatmap.plot(
         direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{*}by{env}")
@@ -104,7 +126,8 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
         direct("avg:system.cpu.user{env:qa} by {host}/2")
       ).withPalette(ColorPalette.Cool)).withTitle("graph2"))
       val w3 = Widget.Ordered(Visualization.Change.graph(
-        Visualization.Change.plot("system.load.1").aggregate(MetricAggregator.Sum).filterBy("env" -> "staging")
+        Visualization.Change.plot("system.load.1").aggregate(MetricAggregator.Sum)
+          .filterBy("env" -> "staging")
           .groupBy("host").compareTo(TimeBase.DayBefore)
           .sortBy(ChangeOrder.Change, SortDirection.Descending).showPresent
       ).withTitle("graph2"))

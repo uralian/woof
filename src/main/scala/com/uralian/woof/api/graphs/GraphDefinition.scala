@@ -719,7 +719,7 @@ final case class HostmapDefinition(fill: (String, MetricAggregator),
 
   def withPalette(palette: HostmapPalette) = copy(style = style.copy(palette = palette))
 
-  def filpped = copy(style = style.copy(flip = true))
+  def flipped = copy(style = style.copy(flip = true))
 
   def withMin(num: BigDecimal) = copy(style = style.copy(min = Some(num)))
 

@@ -7,6 +7,7 @@ import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
 import com.uralian.woof.api.graphs.GraphScale.Sqrt
+import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, DisplayType, GraphScale, TimeBase, Visualization}
 import org.json4s.JsonDSL._
 import org.json4s._
@@ -137,6 +138,31 @@ class DashboardsApiSpec extends AbstractUnitSpec {
           ("q" -> "avg:system.cpu.user{*}by{env}, avg:system.cpu.idle{$var}by{env}") ~ ("style" -> ("palette" -> "cool"))
         )))
       )))
+    }
+    "produce a valid payload for Hostmap" in {
+      import Visualization.Hostmap._
+      val w1 = Widget.Ordered(graph(
+        "system.load.1" -> MetricAggregator.Max, "system.cpu.user" -> MetricAggregator.Avg)
+        .withPalette(YellowGreen)
+        .withMin(5)
+        .filterBy("role:server")
+        .groupBy("env")
+        .hideNoMetricHosts
+        .hideNoGroupHosts
+        .flipped
+      )
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val json = Extraction.decompose(request)
+      println(renderJson((json)))
+      checkJson(json, ("widgets" -> List[JValue](
+        ("definition" -> ("scope" -> List[JValue]("role:server")) ~ ("group" -> List[JValue]("env")) ~
+          ("style" -> ("palette" -> "yellow_to_green") ~ ("palette_flip" -> true) ~ ("fill_min" -> "5")) ~
+          ("no_group_hosts" -> false) ~ ("no_metric_hosts" -> false) ~ ("node_type" -> "host") ~
+          ("type" -> "hostmap") ~ ("requests" ->
+          ("fill" -> ("q" -> "max:system.load.1{role:server}by{env}")) ~
+            ("size" -> ("q" -> "avg:system.cpu.user{role:server}by{env}"))
+          ))))
+      )
     }
     "produce a valid payload for Group" in {
       val w1 = Widget.Ordered(Visualization.Heatmap.graph(Visualization.Heatmap.plot(
