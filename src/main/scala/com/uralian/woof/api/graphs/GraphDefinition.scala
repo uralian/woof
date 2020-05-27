@@ -144,17 +144,19 @@ object QueryValuePlot {
 /**
  * QueryValue graph definition.
  *
- * @param plot query value plot.
- * @param autoscale
- * @param customUnit
- * @param precision
- * @param textAlign
+ * @param plot       query value plot.
+ * @param autoscale  autoscale flag.
+ * @param customUnit custom units.
+ * @param precision  precision.
+ * @param textAlign  text alignment.
+ * @param title      graph title (for dashboards).
  */
 final case class QueryValueDefinition(plot: QueryValuePlot,
                                       autoscale: Boolean = true,
                                       customUnit: Option[String] = None,
                                       precision: Option[Int] = None,
-                                      textAlign: TextAlign = TextAlign.Center)
+                                      textAlign: TextAlign = TextAlign.Center,
+                                      title: Option[String] = None)
   extends GraphDefinition[QueryValue.type] {
 
   def notAutoscaled = copy(autoscale = false)
@@ -164,6 +166,8 @@ final case class QueryValueDefinition(plot: QueryValuePlot,
   def withPrecision(places: Int) = copy(precision = Some(places))
 
   def withAlign(ta: TextAlign) = copy(textAlign = ta)
+
+  def withTitle(title: String) = copy(title = Some(title))
 
   val visualization = QueryValue
 

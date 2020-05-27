@@ -5,8 +5,12 @@ import com.uralian.woof.api.MetricQuery._
 import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
+import com.uralian.woof.api.graphs.FormatColor.{Green, White}
+import com.uralian.woof.api.graphs.FormatComparator.GE
 import com.uralian.woof.api.graphs.GraphScale.Sqrt
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
+import com.uralian.woof.api.graphs.QueryValueAggregator.Last
+import com.uralian.woof.api.graphs.TextAlign.Left
 import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
 
@@ -108,7 +112,20 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
         .flipped
       )
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
-      println(request)
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
+    "create QueryValue widgets" in {
+      import Visualization.QueryValue._
+      val w1 = Widget.Ordered(graph(plot(metric("system.cpu.user").groupBy("host"))
+        .aggregate(Last)
+        .withFormats(ConditionalFormat(GE, 0).withStandardColors(Green on White))
+      ).withCustomUnit("mmm").withPrecision(2).withAlign(Left))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val rsp = api.create(request).futureValue
       rsp.id must not be null
       rsp.title mustBe "Sample"

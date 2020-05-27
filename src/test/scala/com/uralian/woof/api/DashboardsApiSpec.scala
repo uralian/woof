@@ -6,9 +6,13 @@ import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
+import com.uralian.woof.api.graphs.FormatColor._
+import com.uralian.woof.api.graphs.FormatComparator.GE
 import com.uralian.woof.api.graphs.GraphScale.Sqrt
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, DisplayType, GraphScale, TimeBase, Visualization}
+import com.uralian.woof.api.graphs.QueryValueAggregator.Last
+import com.uralian.woof.api.graphs.TextAlign.Left
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, ConditionalFormat, DisplayType, GraphScale, TimeBase}
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.Serialization
@@ -26,7 +30,7 @@ class DashboardsApiSpec extends AbstractUnitSpec {
 
   "CreateDashboard" should {
     "produce a valid payload for Timeseries for Ordered layout" in {
-      import Visualization.Timeseries._
+      import graphs.Visualization.Timeseries._
       val w1 = Widget.Ordered(graph(
         plot(direct("avg:system.cpu.user{*}").as("usr")).displayAs(DisplayType.Bars),
         plot(direct("avg:system.cpu.system{*}").as("sys"))
@@ -61,7 +65,7 @@ class DashboardsApiSpec extends AbstractUnitSpec {
         ("template_variables" -> jVars) ~ ("template_variable_presets" -> jPresets)
     }
     "produce a valid payload for Timeseries for free layout" in {
-      import Visualization.Timeseries._
+      import graphs.Visualization.Timeseries._
       val w1 = Widget.Free(
         graph(plot(direct("avg:system.load.1{*}by{env}").as("load"))).withLegend.withTitle("graph2"),
         Layout(1, 1, 50, 30)
@@ -94,7 +98,7 @@ class DashboardsApiSpec extends AbstractUnitSpec {
         ("template_variables" -> jVars) ~ ("template_variable_presets" -> jPresets)
     }
     "produce a valid payload for Change" in {
-      import Visualization.Change._
+      import graphs.Visualization.Change._
       val w1 = Widget.Ordered(graph(
         plot("system.load.1").aggregate(MetricAggregator.Sum).filterBy("env" -> "staging")
           .groupBy("host").compareTo(TimeBase.DayBefore)
@@ -110,7 +114,7 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       )))
     }
     "produce a valid payload for Distribution" in {
-      import Visualization.Distribution._
+      import graphs.Visualization.Distribution._
       val w1 = Widget.Ordered(graph(plot(metric("system.cpu.user").aggregate(MetricAggregator.Avg)
         .filterBy("env" -> "qa").groupBy("host"),
         direct("avg:system.cpu.user{env:qa} by {host}/2")
@@ -126,7 +130,7 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       )))
     }
     "produce a valid payload for Heatmap" in {
-      import Visualization.Heatmap._
+      import graphs.Visualization.Heatmap._
       val w1 = Widget.Ordered(graph(plot(
         direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{$var}by{env}")
       ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false)))
@@ -140,7 +144,7 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       )))
     }
     "produce a valid payload for Hostmap" in {
-      import Visualization.Hostmap._
+      import graphs.Visualization.Hostmap._
       val w1 = Widget.Ordered(graph(
         "system.load.1" -> MetricAggregator.Max, "system.cpu.user" -> MetricAggregator.Avg)
         .withPalette(YellowGreen)
@@ -153,7 +157,6 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       )
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val json = Extraction.decompose(request)
-      println(renderJson((json)))
       checkJson(json, ("widgets" -> List[JValue](
         ("definition" -> ("scope" -> List[JValue]("role:server")) ~ ("group" -> List[JValue]("env")) ~
           ("style" -> ("palette" -> "yellow_to_green") ~ ("palette_flip" -> true) ~ ("fill_min" -> "5")) ~
@@ -164,11 +167,28 @@ class DashboardsApiSpec extends AbstractUnitSpec {
           ))))
       )
     }
+    "produce a valid payload for QueryValue" in {
+      import graphs.Visualization.QueryValue._
+      val w1 = Widget.Ordered(graph(plot(metric("system.cpu.user").groupBy("host"))
+        .aggregate(Last)
+        .withFormats(ConditionalFormat(GE, 5).withStandardColors(Green on Red))
+      ).withCustomUnit("mmm").withPrecision(2).withAlign(Left))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val json = Extraction.decompose(request)
+      checkJson(json, ("widgets" -> List[JValue](
+        ("definition" -> ("autoscale" -> true) ~ ("custom_unit" -> "mmm") ~ ("precision" -> 2) ~
+          ("text_align" -> "left") ~ ("type" -> "query_value") ~ ("requests" -> List[JValue](
+          ("q" -> "avg:system.cpu.user{*}by{host}") ~ ("aggregator" -> "last") ~ ("conditional_formats" -> List[JValue](
+            ("comparator" -> ">=") ~ ("value" -> JDecimal(5)) ~ ("palette" -> "green_on_red")
+          ))
+        )))
+      )))
+    }
     "produce a valid payload for Group" in {
-      val w1 = Widget.Ordered(Visualization.Heatmap.graph(Visualization.Heatmap.plot(
+      val w1 = Widget.Ordered(graphs.Visualization.Heatmap.graph(graphs.Visualization.Heatmap.plot(
         direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{$var}by{env}")
       ).withPalette(Cool)).withYAxis(AxisOptions(scale = Sqrt, includeZero = false)))
-      val w2 = Widget.Ordered(Visualization.Distribution.graph(Visualization.Distribution.plot(
+      val w2 = Widget.Ordered(graphs.Visualization.Distribution.graph(graphs.Visualization.Distribution.plot(
         metric("system.cpu.user").aggregate(MetricAggregator.Avg)
           .filterBy("env" -> "qa").groupBy("host"),
         direct("avg:system.cpu.user{env:qa} by {host}/2")

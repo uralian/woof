@@ -1,6 +1,6 @@
 package com.uralian.woof.api
 
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, DistributionDefinition, DistributionPlot, HeatmapDefinition, HeatmapPlot, HostmapDefinition, HostmapPlot, HostmapStyle, TimeseriesDefinition, TimeseriesPlot}
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, ConditionalFormat, DistributionDefinition, DistributionPlot, HeatmapDefinition, HeatmapPlot, HostmapDefinition, HostmapPlot, HostmapStyle, QueryValueDefinition, QueryValuePlot, TimeseriesDefinition, TimeseriesPlot}
 import com.uralian.woof.util.JsonUtils
 import enumeratum.Json4s
 import org.json4s.JsonDSL._
@@ -18,6 +18,19 @@ package object dashboards extends JsonUtils {
       case ("includeZero", x) => Some("include_zero" -> x)
     }
   )
+
+  private val conditionalFormatSerializer = {
+    val ser: FSer = {
+      case ("customTextColor", Some(color: Int))       => Some("custom_fg_color" -> ("#" + color.toHexString))
+      case ("customBackgroundColor", Some(color: Int)) => Some("custom_bg_color" -> ("#" + color.toHexString))
+      case ("imageUrl", Some(url: String))             => Some("image_url" -> url)
+    }
+
+    FieldSerializer[ConditionalFormat](combine(
+      ignoreFields("hideValue"),
+      ser
+    ))
+  }
 
   private val tsPlotSerializer = customSerializer[TimeseriesPlot](toJson = implicit fmt => {
     case plot: TimeseriesPlot => {
@@ -102,6 +115,14 @@ package object dashboards extends JsonUtils {
     ))
   }
 
+  private val queryValueDefSerializer = {
+    FieldSerializer[QueryValueDefinition](combine(
+      renameFieldsToJson("visualization" -> "type", "customUnit" -> "custom_unit",
+        "textAlign" -> "text_align", "plots" -> "requests"),
+      ignoreFields("plot")
+    ))
+  }
+
   implicit val dashboardFormats = apiFormats ++ com.uralian.woof.api.graphs.graphEnumSerializers +
     axisOptionsSerializer +
     tsPlotSerializer +
@@ -114,6 +135,9 @@ package object dashboards extends JsonUtils {
     heatDefSerializer +
     hostmapStyleSerializer +
     hostmapDefSerializer +
+    conditionalFormatSerializer +
+    QueryValuePlot.serializer +
+    queryValueDefSerializer +
     Json4s.serializer(LayoutType) +
     Preset.serializer +
     Widget.serializer +
