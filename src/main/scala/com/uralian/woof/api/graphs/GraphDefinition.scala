@@ -259,12 +259,14 @@ private[api] object QueryTablePlot {
  * @param rows           row selection.
  * @param scope          metric scope.
  * @param groupBy        metric grouping.
+ * @param title          graph title (for dashboards).
  */
 final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
                                       keyColumnIndex: Int = 0,
                                       rows: DataWindow = DataWindow(SortDirection.Descending, 10),
                                       scope: Scope = Scope.All,
-                                      groupBy: Seq[TagName] = Nil) extends GraphDefinition[QueryTable.type] {
+                                      groupBy: Seq[TagName] = Nil,
+                                      title: Option[String] = None) extends GraphDefinition[QueryTable.type] {
 
   require(!columns.isEmpty, "There should be at least one column in the table")
   require(keyColumnIndex < columns.size, "Key column index out of range")
@@ -276,6 +278,8 @@ final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
   def filterBy(elements: ScopeElement*) = copy(scope = Scope.Filter(elements: _*))
 
   def groupBy(names: String*) = copy(groupBy = groupBy ++ names.map(TagName.apply))
+
+  def withTitle(title: String) = copy(title = Some(title))
 
   val visualization = QueryTable
 

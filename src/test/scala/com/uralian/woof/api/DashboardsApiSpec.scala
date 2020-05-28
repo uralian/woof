@@ -12,7 +12,7 @@ import com.uralian.woof.api.graphs.GraphScale.{Log, Sqrt}
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.QueryValueAggregator.Last
 import com.uralian.woof.api.graphs.TextAlign.Left
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, ConditionalFormat, DisplayType, GraphScale, QueryValueAggregator, TimeBase, Visualization}
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, ConditionalFormat, DisplayType, GraphScale, QueryValueAggregator, TimeBase}
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.Serialization
@@ -200,6 +200,24 @@ class DashboardsApiSpec extends AbstractUnitSpec {
             ("type" -> "scatterplot") ~ ("requests" ->
             ("x" -> ("q" -> "min:system.cpu.user{*}by{env,client}") ~ ("aggregator" -> "avg")) ~
               ("y" -> ("q" -> "avg:system.cpu.idle{*}by{env,client}") ~ ("aggregator" -> "max"))))
+      )))
+    }
+    "produce a valid payload for QueryTable" in {
+      import graphs.Visualization.QueryTable._
+      val w1 = Widget.Ordered(graph(
+        column("system.cpu.user"), column("system.mem.used"), column("system.load.1")
+      ).filterBy("env" -> "qa").groupBy("host").withKeyColumn(1))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val json = Extraction.decompose(request)
+      checkJson(json, ("widgets" -> List[JValue](
+        ("definition" -> ("type" -> "query_table") ~ ("requests" -> List[JValue](
+          ("q" -> "avg:system.cpu.user{env:qa}by{host}") ~ ("aggregator" -> "avg") ~
+            ("conditional_formats" -> JArray(Nil)) ~ ("alias" -> JNothing),
+          ("q" -> "avg:system.mem.used{env:qa}by{host}") ~ ("aggregator" -> "avg") ~
+            ("conditional_formats" -> JArray(Nil)) ~ ("order" -> "desc") ~ ("limit" -> 10) ~ ("alias" -> JNothing),
+          ("q" -> "avg:system.load.1{env:qa}by{host}") ~ ("aggregator" -> "avg") ~
+            ("conditional_formats" -> JArray(Nil)) ~ ("alias" -> JNothing)
+        )))
       )))
     }
     "produce a valid payload for Group" in {

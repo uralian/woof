@@ -147,6 +147,19 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
       rsp.description mustBe empty
       dashboardIds +:= rsp.id
     }
+    "create QueryTable widgets" in {
+      import graphs.Visualization.QueryTable._
+      val w1 = Widget.Ordered(graph(
+        column("system.cpu.user"), column("system.mem.used"), column("system.load.1")
+      ).groupBy("host").withKeyColumn(1))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
     "create Group widgets" in {
       val w1 = Widget.Ordered(Visualization.Heatmap.graph(Visualization.Heatmap.plot(
         direct("avg:system.cpu.user{*}by{env}"), direct("avg:system.cpu.idle{*}by{env}")

@@ -1,7 +1,8 @@
 package com.uralian.woof.api
 
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, ConditionalFormat, DistributionDefinition, DistributionPlot, HeatmapDefinition, HeatmapPlot, HostmapDefinition, HostmapPlot, HostmapStyle, QueryValueDefinition, QueryValuePlot, ScatterAxis, ScatterDefinition, ScatterPlot, TimeseriesDefinition, TimeseriesPlot}
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, ConditionalFormat, DistributionDefinition, DistributionPlot, HeatmapDefinition, HeatmapPlot, HostmapDefinition, HostmapPlot, HostmapStyle, QueryTableDefinition, QueryTablePlot, QueryValueDefinition, QueryValuePlot, ScatterAxis, ScatterDefinition, ScatterPlot, TimeseriesDefinition, TimeseriesPlot}
 import com.uralian.woof.util.JsonUtils
+import com.uralian.woof.util.JsonUtils.{combine, ignoreFields, renameFieldsToJson}
 import enumeratum.Json4s
 import org.json4s.JsonDSL._
 import org.json4s.{FieldSerializer, JNull}
@@ -138,6 +139,11 @@ package object dashboards extends JsonUtils {
     ))
   }
 
+  private val queryTableDefSerializer = FieldSerializer[QueryTableDefinition](
+    combine(ignoreFields("columns", "keyColumnIndex", "rows", "scope", "groupBy"),
+      renameFieldsToJson("visualization" -> "type", "plots" -> "requests"))
+  )
+
   implicit val dashboardFormats = apiFormats ++ com.uralian.woof.api.graphs.graphEnumSerializers +
     axisOptionsSerializer +
     tsPlotSerializer +
@@ -155,6 +161,8 @@ package object dashboards extends JsonUtils {
     queryValueDefSerializer +
     scatterPlotSerializer +
     scatterDefSerializer +
+    QueryTablePlot.serializer +
+    queryTableDefSerializer +
     Json4s.serializer(LayoutType) +
     Preset.serializer +
     Widget.serializer +
