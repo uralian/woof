@@ -3,14 +3,16 @@ package com.uralian.woof.api
 import java.time.ZoneOffset
 
 import com.uralian.woof.AbstractUnitSpec
+import com.uralian.woof.api.SortDirection.Descending
 import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
 import com.uralian.woof.api.graphs.FormatColor._
-import com.uralian.woof.api.graphs.FormatComparator.GE
+import com.uralian.woof.api.graphs.FormatComparator.{GE, GT}
 import com.uralian.woof.api.graphs.GraphScale.{Log, Sqrt}
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.QueryValueAggregator.Last
+import com.uralian.woof.api.graphs.RankAggregator.L2Norm
 import com.uralian.woof.api.graphs.TextAlign.Left
 import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, ConditionalFormat, DisplayType, GraphScale, QueryValueAggregator, TimeBase}
 import org.json4s.JsonDSL._
@@ -217,6 +219,21 @@ class DashboardsApiSpec extends AbstractUnitSpec {
             ("conditional_formats" -> JArray(Nil)) ~ ("order" -> "desc") ~ ("limit" -> 10) ~ ("alias" -> JNothing),
           ("q" -> "avg:system.load.1{env:qa}by{host}") ~ ("aggregator" -> "avg") ~
             ("conditional_formats" -> JArray(Nil)) ~ ("alias" -> JNothing)
+        )))
+      )))
+    }
+    "produce a valid payload for Toplist" in {
+      import graphs.Visualization.Toplist._
+      val w1 = Widget.Ordered(graph(plot(direct("avg:system.cpu.user{env:qa}by{host}"))
+        .withRows(Descending, 20).aggregate(L2Norm).withFormats(ConditionalFormat(GT, 123, Red on White))))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val json = Extraction.decompose(request)
+      checkJson(json, ("widgets" -> List[JValue](
+        ("definition" -> ("type" -> "toplist") ~ ("requests" -> List[JValue](
+          ("q" -> "top(avg:system.cpu.user{env:qa}by{host}, 20, 'l2norm', 'desc')") ~
+            ("conditional_formats" -> List[JValue](
+              ("comparator" -> ">") ~ ("value" -> JDecimal(123)) ~ ("palette" -> "red_on_white")
+            ))
         )))
       )))
     }

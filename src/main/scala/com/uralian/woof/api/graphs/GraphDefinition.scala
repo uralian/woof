@@ -565,9 +565,14 @@ object ToplistPlot {
 /**
  * Toplist graph definition.
  *
- * @param plot toplist plot.
+ * @param plot  toplist plot.
+ * @param title graph title (for dashboards).
  */
-final case class ToplistDefinition(plot: ToplistPlot) extends GraphDefinition[Toplist.type] {
+final case class ToplistDefinition(plot: ToplistPlot,
+                                   title: Option[String] = None) extends GraphDefinition[Toplist.type] {
+
+  def withTitle(title: String) = copy(title = Some(title))
+
   val visualization = Toplist
   val plots = Seq(plot)
 }

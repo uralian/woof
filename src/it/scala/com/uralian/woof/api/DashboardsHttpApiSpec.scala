@@ -2,14 +2,16 @@ package com.uralian.woof.api
 
 import com.uralian.woof.AbstractITSpec
 import com.uralian.woof.api.MetricQuery._
+import com.uralian.woof.api.SortDirection.Descending
 import com.uralian.woof.api.dashboards._
 import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
-import com.uralian.woof.api.graphs.FormatColor.{Green, White}
+import com.uralian.woof.api.graphs.FormatColor.{Green, Red, White}
 import com.uralian.woof.api.graphs.FormatComparator.GE
 import com.uralian.woof.api.graphs.GraphScale.{Log, Sqrt}
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.QueryValueAggregator.Last
+import com.uralian.woof.api.graphs.RankAggregator.Mean
 import com.uralian.woof.api.graphs.TextAlign.Left
 import com.uralian.woof.api.graphs._
 import com.uralian.woof.http.DataDogClient
@@ -152,6 +154,18 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
       val w1 = Widget.Ordered(graph(
         column("system.cpu.user"), column("system.mem.used"), column("system.load.1")
       ).groupBy("host").withKeyColumn(1))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
+    "create Toplist widgets" in {
+      import graphs.Visualization.Toplist._
+      val w1 = Widget.Ordered(graph(plot(direct("avg:system.cpu.user{*}by{host}"))
+        .withRows(Descending, 5).aggregate(Mean).withFormats(ConditionalFormat(GE, 90, White on Red))))
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val rsp = api.create(request).futureValue
       rsp.id must not be null
