@@ -429,15 +429,19 @@ private[api] object ScatterPlot {
  * @param y       Y-axis definition.
  * @param pointBy point by tag names.
  * @param colorBy color by tag names.
+ * @param title   graph title (for dashboards).
  */
 final case class ScatterDefinition(x: ScatterAxis,
                                    y: ScatterAxis,
                                    pointBy: Seq[TagName] = Nil,
-                                   colorBy: Seq[TagName] = Nil) extends GraphDefinition[Scatter.type] {
+                                   colorBy: Seq[TagName] = Nil,
+                                   title: Option[String] = None) extends GraphDefinition[Scatter.type] {
 
   def pointBy(names: String*): ScatterDefinition = copy(pointBy = pointBy ++ names.map(TagName.apply))
 
   def colorBy(names: String*): ScatterDefinition = copy(colorBy = colorBy ++ names.map(TagName.apply))
+
+  def withTitle(title: String) = copy(title = Some(title))
 
   val visualization = Scatter
 

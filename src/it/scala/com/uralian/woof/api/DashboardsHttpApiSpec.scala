@@ -7,7 +7,7 @@ import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
 import com.uralian.woof.api.graphs.FormatColor.{Green, White}
 import com.uralian.woof.api.graphs.FormatComparator.GE
-import com.uralian.woof.api.graphs.GraphScale.Sqrt
+import com.uralian.woof.api.graphs.GraphScale.{Log, Sqrt}
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.QueryValueAggregator.Last
 import com.uralian.woof.api.graphs.TextAlign.Left
@@ -125,6 +125,20 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
         .aggregate(Last)
         .withFormats(ConditionalFormat(GE, 0).withStandardColors(Green on White))
       ).withCustomUnit("mmm").withPrecision(2).withAlign(Left))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val rsp = api.create(request).futureValue
+      rsp.id must not be null
+      rsp.title mustBe "Sample"
+      rsp.url must not be null
+      rsp.description mustBe empty
+      dashboardIds +:= rsp.id
+    }
+    "create Scatterplot widgets" in {
+      import graphs.Visualization.Scatter._
+      val w1 = Widget.Ordered(graph(
+        axis("system.mem.used").aggregate(MetricAggregator.Max).withOptions(label = Some("xxx")),
+        axis("system.load.1").rollup(QueryValueAggregator.Sum).withOptions(scale = Log, max = Some(100))
+      ).pointBy("client").colorBy("env"))
       val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
       val rsp = api.create(request).futureValue
       rsp.id must not be null

@@ -8,11 +8,11 @@ import com.uralian.woof.api.dsl._
 import com.uralian.woof.api.graphs.ColorPalette.Cool
 import com.uralian.woof.api.graphs.FormatColor._
 import com.uralian.woof.api.graphs.FormatComparator.GE
-import com.uralian.woof.api.graphs.GraphScale.Sqrt
+import com.uralian.woof.api.graphs.GraphScale.{Log, Sqrt}
 import com.uralian.woof.api.graphs.HostmapPalette.YellowGreen
 import com.uralian.woof.api.graphs.QueryValueAggregator.Last
 import com.uralian.woof.api.graphs.TextAlign.Left
-import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, ConditionalFormat, DisplayType, GraphScale, TimeBase}
+import com.uralian.woof.api.graphs.{AxisOptions, ChangeOrder, ColorPalette, ConditionalFormat, DisplayType, GraphScale, QueryValueAggregator, TimeBase, Visualization}
 import org.json4s.JsonDSL._
 import org.json4s._
 import org.json4s.native.Serialization
@@ -182,6 +182,24 @@ class DashboardsApiSpec extends AbstractUnitSpec {
             ("comparator" -> ">=") ~ ("value" -> JDecimal(5)) ~ ("palette" -> "green_on_red")
           ))
         )))
+      )))
+    }
+    "produce a valid payload for Scatterplot" in {
+      import graphs.Visualization.Scatter._
+      val w1 = Widget.Ordered(graph(
+        axis("system.cpu.user").aggregate(MetricAggregator.Min).withOptions(label = Some("xxx")),
+        axis("system.cpu.idle").rollup(QueryValueAggregator.Max).withOptions(scale = Log, max = Some(100))
+      ).pointBy("env").colorBy("client"))
+      val request = CreateDashboard("Sample", LayoutType.Ordered, Seq(w1))
+      val json = Extraction.decompose(request)
+      checkJson(json, ("widgets" -> List[JValue](
+        ("definition" ->
+          ("xaxis" -> ("label" -> "xxx") ~ ("scale" -> "linear") ~ ("include_zero" -> true)) ~
+            ("yaxis" -> ("scale" -> "log") ~ ("max" -> "100") ~ ("include_zero" -> true)) ~
+            ("color_by_groups" -> List("client")) ~
+            ("type" -> "scatterplot") ~ ("requests" ->
+            ("x" -> ("q" -> "min:system.cpu.user{*}by{env,client}") ~ ("aggregator" -> "avg")) ~
+              ("y" -> ("q" -> "avg:system.cpu.idle{*}by{env,client}") ~ ("aggregator" -> "max"))))
       )))
     }
     "produce a valid payload for Group" in {
