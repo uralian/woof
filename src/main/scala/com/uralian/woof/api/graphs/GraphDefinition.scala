@@ -1,6 +1,7 @@
 package com.uralian.woof.api.graphs
 
 import com.uralian.woof.api._
+import com.uralian.woof.api.dashboards.WidgetContent
 import com.uralian.woof.api.graphs.Visualization._
 import com.uralian.woof.util.JsonUtils._
 import org.json4s.JsonDSL._
@@ -11,7 +12,7 @@ import org.json4s._
  *
  * @tparam V visualization type.
  */
-sealed trait GraphDefinition[V <: Visualization] {
+sealed trait GraphDefinition[V <: Visualization] extends WidgetContent {
 
   /**
    * Graph visualization type (Timeseries, Table, Heatmap etc.)
@@ -89,27 +90,32 @@ object TimeseriesPlot {
 /**
  * Timeseries graph definition.
  *
- * @param plots plots.
- * @param yaxis Y-axis options.
+ * @param plots      plots.
+ * @param yaxis      Y-axis options.
+ * @param title      graph title (for dashboards).
+ * @param showLegend shows the legend (for screenboards only).
  */
-final case class TimeseriesDefinition(plots: Seq[TimeseriesPlot], yaxis: AxisOptions = AxisOptions.Default)
+final case class TimeseriesDefinition(plots: Seq[TimeseriesPlot],
+                                      yaxis: AxisOptions = AxisOptions.Default,
+                                      title: Option[String] = None,
+                                      showLegend: Boolean = false)
   extends GraphDefinition[Timeseries.type] {
 
   val visualization = Timeseries
 
-  def withYAxis(axis: AxisOptions): TimeseriesDefinition = copy(yaxis = axis)
+  def withTitle(title: String) = copy(title = Some(title))
 
-  def withYAxis(scale: GraphScale = GraphScale.Default,
-                min: Option[BigDecimal] = None,
-                max: Option[BigDecimal] = None,
-                includeZero: Boolean = true): TimeseriesDefinition = withYAxis(AxisOptions(None, scale, min, max, includeZero))
+  def withLegend = copy(showLegend = true)
+
+  def withYAxis(axis: AxisOptions): TimeseriesDefinition = copy(yaxis = axis)
 }
 
 /**
  * Factory for [[TimeseriesDefinition]] instances.
  */
 object TimeseriesDefinition {
-  val serializer: FieldSerializer[TimeseriesDefinition] = translateFields[TimeseriesDefinition]("visualization" -> "viz", "plots" -> "requests")
+  val serializer = translateFields[TimeseriesDefinition]("visualization" -> "viz", "plots" -> "requests",
+    "showLegend" -> null)
 }
 
 /**
@@ -138,17 +144,19 @@ object QueryValuePlot {
 /**
  * QueryValue graph definition.
  *
- * @param plot query value plot.
- * @param autoscale
- * @param customUnit
- * @param precision
- * @param textAlign
+ * @param plot       query value plot.
+ * @param autoscale  autoscale flag.
+ * @param customUnit custom units.
+ * @param precision  precision.
+ * @param textAlign  text alignment.
+ * @param title      graph title (for dashboards).
  */
 final case class QueryValueDefinition(plot: QueryValuePlot,
                                       autoscale: Boolean = true,
                                       customUnit: Option[String] = None,
                                       precision: Option[Int] = None,
-                                      textAlign: TextAlign = TextAlign.Center)
+                                      textAlign: TextAlign = TextAlign.Center,
+                                      title: Option[String] = None)
   extends GraphDefinition[QueryValue.type] {
 
   def notAutoscaled = copy(autoscale = false)
@@ -158,6 +166,8 @@ final case class QueryValueDefinition(plot: QueryValuePlot,
   def withPrecision(places: Int) = copy(precision = Some(places))
 
   def withAlign(ta: TextAlign) = copy(textAlign = ta)
+
+  def withTitle(title: String) = copy(title = Some(title))
 
   val visualization = QueryValue
 
@@ -249,12 +259,14 @@ private[api] object QueryTablePlot {
  * @param rows           row selection.
  * @param scope          metric scope.
  * @param groupBy        metric grouping.
+ * @param title          graph title (for dashboards).
  */
 final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
                                       keyColumnIndex: Int = 0,
                                       rows: DataWindow = DataWindow(SortDirection.Descending, 10),
                                       scope: Scope = Scope.All,
-                                      groupBy: Seq[TagName] = Nil) extends GraphDefinition[QueryTable.type] {
+                                      groupBy: Seq[TagName] = Nil,
+                                      title: Option[String] = None) extends GraphDefinition[QueryTable.type] {
 
   require(!columns.isEmpty, "There should be at least one column in the table")
   require(keyColumnIndex < columns.size, "Key column index out of range")
@@ -266,6 +278,8 @@ final case class QueryTableDefinition(columns: Seq[QueryTableColumn],
   def filterBy(elements: ScopeElement*) = copy(scope = Scope.Filter(elements: _*))
 
   def groupBy(names: String*) = copy(groupBy = groupBy ++ names.map(TagName.apply))
+
+  def withTitle(title: String) = copy(title = Some(title))
 
   val visualization = QueryTable
 
@@ -318,18 +332,21 @@ object HeatmapPlot {
 /**
  * Heatmap graph definition.
  *
- * @param plot  heatmap plot.
- * @param yaxis Y-axis options.
+ * @param plot       heatmap plot.
+ * @param yaxis      Y-axis options.
+ * @param title      graph title (for dashboards).
+ * @param showLegend show graph legend (for screenboards only)
  */
 final case class HeatmapDefinition(plot: HeatmapPlot,
-                                   yaxis: AxisOptions = AxisOptions.Default) extends GraphDefinition[Heatmap.type] {
+                                   yaxis: AxisOptions = AxisOptions.Default,
+                                   title: Option[String] = None,
+                                   showLegend: Boolean = false) extends GraphDefinition[Heatmap.type] {
 
   def withYAxis(axis: AxisOptions): HeatmapDefinition = copy(yaxis = axis)
 
-  def withYAxis(scale: GraphScale = GraphScale.Default,
-                min: Option[BigDecimal] = None,
-                max: Option[BigDecimal] = None,
-                includeZero: Boolean = true): HeatmapDefinition = withYAxis(AxisOptions(None, scale, min, max, includeZero))
+  def withTitle(title: String) = copy(title = Some(title))
+
+  def withLegend = copy(showLegend = true)
 
   val visualization = Heatmap
 
@@ -342,7 +359,7 @@ final case class HeatmapDefinition(plot: HeatmapPlot,
 object HeatmapDefinition {
   val serializer = FieldSerializer[HeatmapDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
-    ignoreFields("plot")
+    ignoreFields("plot", "showLegend")
   ))
 }
 
@@ -416,15 +433,19 @@ private[api] object ScatterPlot {
  * @param y       Y-axis definition.
  * @param pointBy point by tag names.
  * @param colorBy color by tag names.
+ * @param title   graph title (for dashboards).
  */
 final case class ScatterDefinition(x: ScatterAxis,
                                    y: ScatterAxis,
                                    pointBy: Seq[TagName] = Nil,
-                                   colorBy: Seq[TagName] = Nil) extends GraphDefinition[Scatter.type] {
+                                   colorBy: Seq[TagName] = Nil,
+                                   title: Option[String] = None) extends GraphDefinition[Scatter.type] {
 
   def pointBy(names: String*): ScatterDefinition = copy(pointBy = pointBy ++ names.map(TagName.apply))
 
   def colorBy(names: String*): ScatterDefinition = copy(colorBy = colorBy ++ names.map(TagName.apply))
+
+  def withTitle(title: String) = copy(title = Some(title))
 
   val visualization = Scatter
 
@@ -481,9 +502,17 @@ object DistributionPlot {
 /**
  * Distribution graph definition.
  *
- * @param plot distribution plot.
+ * @param plot       distribution plot.
+ * @param title      graph title (for dashboards).
+ * @param showLegend shows the legend (for screenboards only).
  */
-final case class DistributionDefinition(plot: DistributionPlot) extends GraphDefinition[Distribution.type] {
+final case class DistributionDefinition(plot: DistributionPlot,
+                                        title: Option[String] = None,
+                                        showLegend: Boolean = false) extends GraphDefinition[Distribution.type] {
+
+  def withTitle(title: String) = copy(title = Some(title))
+
+  def withLegend = copy(showLegend = true)
 
   val visualization = Distribution
 
@@ -496,7 +525,7 @@ final case class DistributionDefinition(plot: DistributionPlot) extends GraphDef
 object DistributionDefinition {
   val serializer = FieldSerializer[DistributionDefinition](combine(
     renameFieldsToJson("visualization" -> "viz", "plots" -> "requests"),
-    ignoreFields("plot")
+    ignoreFields("plot", "showLegend")
   ))
 }
 
@@ -536,9 +565,14 @@ object ToplistPlot {
 /**
  * Toplist graph definition.
  *
- * @param plot toplist plot.
+ * @param plot  toplist plot.
+ * @param title graph title (for dashboards).
  */
-final case class ToplistDefinition(plot: ToplistPlot) extends GraphDefinition[Toplist.type] {
+final case class ToplistDefinition(plot: ToplistPlot,
+                                   title: Option[String] = None) extends GraphDefinition[Toplist.type] {
+
+  def withTitle(title: String) = copy(title = Some(title))
+
   val visualization = Toplist
   val plots = Seq(plot)
 }
@@ -625,9 +659,13 @@ object ChangePlot {
 /**
  * Change graph definition.
  *
- * @param plot change plot.
+ * @param plot  change plot.
+ * @param title graph title (for dashboards).
  */
-final case class ChangeDefinition(plot: ChangePlot) extends GraphDefinition[Change.type] {
+final case class ChangeDefinition(plot: ChangePlot, title: Option[String] = None) extends GraphDefinition[Change.type] {
+
+  def withTitle(title: String) = copy(title = Some(title))
+
   val visualization = Change
   val plots = Seq(plot)
 }
@@ -698,7 +736,7 @@ final case class HostmapDefinition(fill: (String, MetricAggregator),
 
   def withPalette(palette: HostmapPalette) = copy(style = style.copy(palette = palette))
 
-  def filpped = copy(style = style.copy(flip = true))
+  def flipped = copy(style = style.copy(flip = true))
 
   def withMin(num: BigDecimal) = copy(style = style.copy(min = Some(num)))
 

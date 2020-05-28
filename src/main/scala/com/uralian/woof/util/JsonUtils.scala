@@ -2,7 +2,10 @@ package com.uralian.woof.util
 
 import java.net.URL
 import java.time._
+import java.time.format.DateTimeFormatter
+import java.time.temporal.TemporalAccessor
 
+import enumeratum.EnumEntry
 import org.json4s._
 
 /**
@@ -10,6 +13,47 @@ import org.json4s._
  */
 trait JsonUtils {
 
+  /* implicits */
+  implicit def enum2jvalue(x: EnumEntry) = JString(x.entryName)
+
+  /* for custom serializers */
+  type FromJson[T] = PartialFunction[JValue, T]
+  type ToJson = PartialFunction[Any, JValue]
+
+  /**
+   * Default deserializer for a given type.
+   *
+   * @param fmt
+   * @tparam T
+   * @return
+   */
+  def baseFromJson[T](fmt: Formats, mf: Manifest[T]): FromJson[T] = {
+    case jv => jv.extract[T](fmt, mf)
+  }
+
+  /**
+   * Default serializer.
+   *
+   * @param fmt
+   * @return
+   */
+  def baseToJson(fmt: Formats): ToJson = {
+    case x => Extraction.decompose(x)(fmt)
+  }
+
+  /**
+   * Creates a custom serializer from from/to JSON functions.
+   *
+   * @param fromJson
+   * @param toJson
+   * @tparam T
+   * @return
+   */
+  def customSerializer[T: Manifest](fromJson: (Formats, Manifest[T]) => FromJson[T] = baseFromJson[T] _,
+                                    toJson: Formats => ToJson = baseToJson _) =
+    new CustomSerializer[T](fmt => (fromJson(fmt, implicitly), toJson(fmt)))
+
+  /* for field serializers */
   type FSer = PartialFunction[(String, Any), Option[(String, Any)]]
   type FDes = PartialFunction[JField, JField]
 
@@ -72,16 +116,22 @@ trait JsonUtils {
 
   /* common serializers */
 
+  private val fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS[XXX][X]")
+
+  private def parseInstant(str: String): Instant = fmt.parse(str, (t: TemporalAccessor) => Instant.from(t))
+
   val instantSerializerAsSeconds = new CustomSerializer[Instant](_ => ( {
-    case JLong(num) => Instant.ofEpochSecond(num)
-    case JInt(num)  => Instant.ofEpochSecond(num.toLong)
+    case JLong(num)   => Instant.ofEpochSecond(num)
+    case JInt(num)    => Instant.ofEpochSecond(num.toLong)
+    case JString(str) => parseInstant(str)
   }, {
     case t: Instant => JLong(t.getEpochSecond)
   }))
 
   val instantSerializerAsMillis = new CustomSerializer[Instant](_ => ( {
-    case JLong(num) => Instant.ofEpochMilli(num)
-    case JInt(num)  => Instant.ofEpochMilli(num.toLong)
+    case JLong(num)   => Instant.ofEpochMilli(num)
+    case JInt(num)    => Instant.ofEpochMilli(num.toLong)
+    case JString(str) => parseInstant(str)
   }, {
     case t: Instant => JLong(t.toEpochMilli)
   }))
