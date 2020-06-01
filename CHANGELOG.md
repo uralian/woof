@@ -1,0 +1,15 @@
+## v0.1.0 (May, 2020) [current]
+- Implement Tags API
+- Implement Metrics API
+- Implement Hosts API
+- Implement Graphs API
+- Implement Events API
+- Implement Dashboards API
+  - Timeseries widget
+  - Change widget
+  - Distribution widget
+  - Heatmap widget
+  - HostMap widget
+  - QueryValue widget
+  - QueryTable widget
+  - Toplist widget
