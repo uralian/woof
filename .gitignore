@@ -2,6 +2,7 @@
 secret.key
 *.class
 *.log
+local.* 
 
 # sbt
 dist/*

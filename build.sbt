@@ -3,7 +3,7 @@ organization in ThisBuild := "com.uralian"
 organizationName in ThisBuild := "Uralian"
 version in ThisBuild := "0.1.0-SNAPSHOT"
 
-scalaVersion in ThisBuild := "2.12.8"
+scalaVersion in ThisBuild := "2.12.10"
 
 // build options
 scalacOptions in ThisBuild ++= Seq(
@@ -21,6 +21,9 @@ scalacOptions in(ThisBuild, Compile, doc) ++= Seq("-no-link-warnings")
 // scoverage options
 coverageHighlighting in ThisBuild := true
 coverageMinimum in ThisBuild := 80
+
+// publishing options
+publishTo := sonatypePublishToBundle.value
 
 lazy val root = project.in(file("."))
   .settings(name := "woof-core")
