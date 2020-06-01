@@ -1,7 +1,7 @@
 // general project attributes
 organization in ThisBuild := "com.uralian"
 organizationName in ThisBuild := "Uralian"
-version in ThisBuild := "0.1.0-SNAPSHOT"
+version in ThisBuild := "0.1.0"
 
 scalaVersion in ThisBuild := "2.12.10"
 

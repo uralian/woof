@@ -137,7 +137,7 @@ final case class VarName(name: String) extends ScopeElement {
 }
 
 /**
- * Instance factory for [[VagName]].
+ * Instance factory for [[VarName]].
  */
 object VarName {
 
