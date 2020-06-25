@@ -40,7 +40,7 @@ final case class Event(id: Long,
                        children: Seq[ChildEvent],
                        relatedEventId: Option[Int],
                        deviceName: Option[String],
-                       tags: List[Tag],
+                       tags: List[ScopeElement],
                        url: String) {
 
   override def toString: String = Serialization.write(this)
