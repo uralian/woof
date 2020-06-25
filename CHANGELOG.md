@@ -1,4 +1,7 @@
-## v0.1.0 (May, 2020) [current]
+## v0.1.1 (June, 2020) [current]
+- Fix Event serialization
+
+## v0.1.0 (May, 2020)
 - Implement Tags API
 - Implement Metrics API
 - Implement Hosts API
