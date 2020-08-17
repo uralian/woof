@@ -341,8 +341,8 @@ class DashboardsApiSpec extends AbstractUnitSpec {
       dashboard.title mustBe "Sample"
       dashboard.url mustBe "/dashboard/vwh-zv9-vww/sample"
       dashboard.description.value mustBe "Sample dashboard"
-      dashboard.authorName mustBe "John Smith"
-      dashboard.authorHandle mustBe "john.smith@test.com"
+      dashboard.authorName.value mustBe "John Smith"
+      dashboard.authorHandle.value mustBe "john.smith@test.com"
       dashboard.createdAt mustBe java.time.LocalDateTime.of(
         2020, 5, 8, 16, 52, 25, 973528000
       ).toInstant(ZoneOffset.UTC)

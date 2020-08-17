@@ -90,6 +90,16 @@ trait DashboardsApi {
   def updateList(listId: Int, name: String): Future[DashboardList]
 
   /**
+   * Updates list items.
+   *
+   * @param listId    list id.
+   * @param operation type of the update operation.
+   * @param items     item ids mapped to their types.
+   * @return the list of item ids.
+   */
+  def updateListItems(listId: Int, operation: ItemOperation, items: Map[String, DashboardType]): Future[List[String]]
+
+  /**
    * Deletes a dashboard list.
    *
    * @param listId list id.
@@ -145,6 +155,27 @@ class DashboardsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
 
   def updateList(listId: Int, name: String): Future[DashboardList] =
     apiPut[JValue, DashboardList](s"${paths.dblist}/$listId", "name" -> name)
+
+  def updateListItems(listId: Int, operation: ItemOperation, items: Map[String, DashboardType]): Future[List[String]] = {
+
+    val itemJson = "dashboards" -> (items map {
+      case (itemId, itemType) => ("id" -> itemId) ~ ("type" -> itemType.entryName)
+    })
+
+    def extractIds(json: JValue) = json.extract[List[JValue]].map(jv => (jv \ "id").extract[String])
+
+    operation match {
+      case ItemOperation.Add    => apiPostJ[JValue](paths.listDbs(listId), itemJson, AddHeaders) map { json =>
+        extractIds(json \ "added_dashboards_to_list")
+      }
+      case ItemOperation.Delete => apiDelete[JValue, JValue](paths.listDbs(listId), itemJson, AddHeaders) map { json =>
+        extractIds(json \ "deleted_dashboards_from_list")
+      }
+      case ItemOperation.Update => apiPutJ[JValue](paths.listDbs(listId), itemJson) map { json =>
+        extractIds(json \ "dashboards")
+      }
+    }
+  }
 
   def deleteList(listId: Int): Future[Boolean] = apiDeleteJ(s"${paths.dblist}/$listId") map { json =>
     (json \ "deleted_dashboard_list_id").toOption.isDefined

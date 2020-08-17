@@ -29,7 +29,7 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
   val api: DashboardsApi = new DashboardsHttpApi(client)
 
   var dashboardIds: List[String] = Nil
-  var dashboardListId: Int = _
+  var listId: Int = _
 
   "DashboardsHttpApi" should {
     "create Timeseries widgets" in {
@@ -223,13 +223,13 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
     }
     "create a dashboard list" in {
       val rsp = api.createList("Sample DL").futureValue
-      dashboardListId = rsp.id
+      listId = rsp.id
       rsp.id must not be 0
       rsp.name mustBe "Sample DL"
     }
     "retrieve dashboard list by id" in {
-      val rsp = api.getList(dashboardListId).futureValue
-      rsp.id mustBe dashboardListId
+      val rsp = api.getList(listId).futureValue
+      rsp.id mustBe listId
       rsp.name mustBe "Sample DL"
     }
     "retrieve all dashboard lists" in {
@@ -238,12 +238,33 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
       rsp.map(_.name) must contain("Sample DL")
     }
     "update dashboard list" in {
-      val rsp = api.updateList(dashboardListId, "New Sample DL").futureValue
-      rsp.id mustBe dashboardListId
+      val rsp = api.updateList(listId, "New Sample DL").futureValue
+      rsp.id mustBe listId
       rsp.name mustBe "New Sample DL"
     }
+    "add items to dashboard list" in {
+      import DashboardType._
+      import ItemOperation._
+      val id1 = dashboardIds.head
+      val rsp = api.updateListItems(listId, Add, Map(id1 -> CustomTimeboard)).futureValue
+      rsp mustBe List(id1)
+    }
+    "update items in dashboard list" in {
+      import DashboardType._
+      import ItemOperation._
+      val (id1, id2) = (dashboardIds.head, dashboardIds.tail.head)
+      val rsp = api.updateListItems(listId, Update, Map(id1 -> CustomTimeboard, id2 -> CustomTimeboard)).futureValue
+      rsp.toSet mustBe Set(id1, id2)
+    }
+    "delete items in dashboard list" in {
+      import DashboardType._
+      import ItemOperation._
+      val (id1, id2) = (dashboardIds.head, dashboardIds.tail.head)
+      val rsp = api.updateListItems(listId, Delete, Map(id1 -> CustomTimeboard)).futureValue
+      rsp mustBe List(id1)
+    }
     "delete dashboard list" in {
-      val rsp = api.deleteList(dashboardListId).futureValue
+      val rsp = api.deleteList(listId).futureValue
       rsp mustBe true
     }
     "delete dashboards" in {
