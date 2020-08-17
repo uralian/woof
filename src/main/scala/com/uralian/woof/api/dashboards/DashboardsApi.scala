@@ -24,6 +24,30 @@ trait DashboardsApi {
   def create(request: CreateDashboard[_ <: LayoutType]): Future[Dashboard]
 
   /**
+   * Retrieves a dashboard.
+   *
+   * @param dashboardId dashboard id.
+   * @return the dashboard.
+   */
+  def get(dashboardId: String): Future[Dashboard]
+
+  /**
+   * Retrieves all dashboards.
+   *
+   * @return a list of dashboards.
+   */
+  def getAll(): Future[List[Dashboard]]
+
+  /**
+   * Updates a dashboard.
+   *
+   * @param dashboardId dashboard id.
+   * @param request     dashboard data.
+   * @return the updated dashboard.
+   */
+  def update(dashboardId: String, request: CreateDashboard[_ <: LayoutType]): Future[Dashboard]
+
+  /**
    * Deletes the specified dashboard.
    *
    * @param dashboardId id of the dashboard to delete.
@@ -94,6 +118,15 @@ class DashboardsHttpApi(client: DataDogClient)(implicit ec: ExecutionContext)
 
   def create(request: CreateDashboard[_ <: LayoutType]): Future[Dashboard] =
     apiPost[CreateDashboard[_ <: LayoutType], Dashboard](paths.db, request, AddHeaders)
+
+  def get(dashboardId: String): Future[Dashboard] = apiGet[Dashboard](s"${paths.db}/$dashboardId")
+
+  def getAll(): Future[List[Dashboard]] = apiGetJ(paths.db) map { json =>
+    (json \ "dashboards").extract[List[Dashboard]]
+  }
+
+  def update(dashboardId: String, request: CreateDashboard[_ <: LayoutType]): Future[Dashboard] =
+    apiPut[CreateDashboard[_ <: LayoutType], Dashboard](s"${paths.db}/$dashboardId", request)
 
   def delete(dashboardId: String): Future[Boolean] = apiDeleteJ(s"${paths.db}/$dashboardId").map { json =>
     json.findField(_._1 == "deleted_dashboard_id").isDefined
