@@ -64,17 +64,19 @@ class DataDogClient(apiKey: String,
    * Sends a DELETE request to a given path. The security parameters are injected via the supplied [[SecurityInjector]].
    *
    * @param path     path to the resource.
+   * @param payload  payload to encode to JSON and send as HTTP body.
    * @param security security injector.
    * @param params   query parameters.
    * @param formats  JSON formats.
    * @param ec       execution context.
+   * @tparam Q request type.
    * @tparam R response type.
    * @return either a response type or exception as a future.
    * @throws DataDogApiError in case of an error returned by the backend.
    */
-  def httpDelete[R: Manifest](path: String, security: Authenticator, params: (String, Any)*)
-                             (implicit formats: Formats, ec: ExecutionContext): Future[R] = {
-    send[R](Method.DELETE, path, security(apiKey, applicationKey), r => r, params: _*)
+  def httpDelete[Q <: AnyRef, R: Manifest](path: String, payload: Q, security: Authenticator, params: (String, Any)*)
+                                          (implicit formats: Formats, ec: ExecutionContext): Future[R] = {
+    send[R](Method.DELETE, path, security(apiKey, applicationKey), _.contentType(ApplicationJson).body(payload), params: _*)
   }
 
   /**
