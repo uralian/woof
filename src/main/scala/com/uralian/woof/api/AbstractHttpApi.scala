@@ -1,6 +1,7 @@
 package com.uralian.woof.api
 
 import com.uralian.woof.http.{Authenticator, DataDogClient}
+import org.json4s.JsonAST.JNothing
 import org.json4s.{Formats, JValue}
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -74,7 +75,20 @@ abstract class AbstractHttpApi(client: DataDogClient)(implicit formats: Formats,
    * @return future response as R.
    */
   protected def apiDeleteJ(path: String, auth: Authenticator = AddHeaders): Future[JValue] =
-    client.httpDelete[JValue](path, auth)
+    apiDelete[JValue, JValue](path, JNothing, auth)
+
+  /**
+   * Executes HTTP DELETE and converts the result to the specified type.
+   *
+   * @param path    request path.
+   * @param request value to be marshaled into JSON request body.
+   * @param auth    security injector.
+   * @tparam Q request type.
+   * @tparam R response type.
+   * @return future response as R.
+   */
+  protected def apiDelete[Q <: AnyRef, R: Manifest](path: String, request: Q, auth: Authenticator = AddHeaders): Future[R] =
+    client.httpDelete[Q, R](path, request, auth)
 
   /**
    * Executes HTTP GET and converts the result to the specified type.

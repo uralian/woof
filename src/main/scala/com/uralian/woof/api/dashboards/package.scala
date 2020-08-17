@@ -2,7 +2,6 @@ package com.uralian.woof.api
 
 import com.uralian.woof.api.graphs.{AxisOptions, ChangeDefinition, ChangePlot, ColorPalette, ConditionalFormat, DistributionDefinition, DistributionPlot, HeatmapDefinition, HeatmapPlot, HostmapDefinition, HostmapPlot, HostmapStyle, QueryTableDefinition, QueryTablePlot, QueryValueDefinition, QueryValuePlot, ScatterAxis, ScatterDefinition, ScatterPlot, TimeseriesDefinition, TimeseriesPlot, ToplistDefinition, ToplistPlot}
 import com.uralian.woof.util.JsonUtils
-import com.uralian.woof.util.JsonUtils.{combine, ignoreFields, renameFieldsToJson}
 import enumeratum.Json4s
 import org.json4s.JsonDSL._
 import org.json4s.{FieldSerializer, JNull}
@@ -175,5 +174,7 @@ package object dashboards extends JsonUtils {
     Widget.serializer +
     WidgetGroup.serializer +
     CreateDashboard.serializer +
-    Dashboard.serializer
+    Json4s.serializer(DashboardType) +
+    Dashboard.serializer +
+    DashboardList.serializer
 }
