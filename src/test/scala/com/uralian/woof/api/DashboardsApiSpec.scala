@@ -1,6 +1,6 @@
 package com.uralian.woof.api
 
-import java.time.ZoneOffset
+import java.time.{Instant, LocalDate, LocalDateTime, ZoneOffset}
 
 import com.uralian.woof.AbstractUnitSpec
 import com.uralian.woof.api.SortDirection.Descending
@@ -357,6 +357,43 @@ class DashboardsApiSpec extends AbstractUnitSpec {
         TemplateVar("env", Some("env"))
       )
       dashboard.presets mustBe List(Preset("qa", Map("env" -> "qa")))
+    }
+  }
+
+  "DashboardList" should {
+    "deserialize from valid JSON" in {
+      val json =
+        """
+          |{
+          |    "is_favorite": true,
+          |    "name": "Benchmarks",
+          |    "dashboard_count": 9,
+          |    "author": {
+          |        "handle": "john@doe.com",
+          |        "name": "John Doe"
+          |    },
+          |    "created": "2020-08-12T21:11:24.000000+00:00",
+          |    "type": "manual_dashboard_list",
+          |    "dashboards": null,
+          |    "modified": "2020-08-14T13:52:24.000000+00:00",
+          |    "id": 120741
+          |}
+          |""".stripMargin
+      val dl = Serialization.read[DashboardList](json)
+      dl.id mustBe 120741
+      dl.name mustBe "Benchmarks"
+      dl.author mustBe Author(name = "John Doe", email = None, handle = Some("john@doe.com"))
+      dl.createdAt mustBe LocalDateTime.of(2020, 8, 12, 21, 11, 24).toInstant(ZoneOffset.UTC)
+      dl.modifiedAt mustBe LocalDateTime.of(2020, 8, 14, 13, 52, 24).toInstant(ZoneOffset.UTC)
+      dl.isFavorite mustBe true
+      dl.dashboardCount mustBe 9
+      dl.listType mustBe "manual_dashboard_list"
+    }
+    "render toString as JSON" in {
+      val dl = DashboardList(111, "Benchmarks", Author(name = "John", email = None, handle = Some("john@doe.com")),
+        Instant.ofEpochSecond(1577886283), Instant.ofEpochSecond(1577886283),
+        true, 5, "manual_dashboard_list")
+      Serialization.read[DashboardList](dl.toString) mustBe dl
     }
   }
 

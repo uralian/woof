@@ -29,6 +29,7 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
   val api: DashboardsApi = new DashboardsHttpApi(client)
 
   var dashboardIds: List[String] = Nil
+  var dashboardListId: Int = _
 
   "DashboardsHttpApi" should {
     "create Timeseries widgets" in {
@@ -197,6 +198,31 @@ class DashboardsHttpApiSpec extends AbstractITSpec {
       rsp.url must not be null
       rsp.description mustBe empty
       dashboardIds +:= rsp.id
+    }
+    "create a dashboard list" in {
+      val dl = api.createList("Sample DL").futureValue
+      dashboardListId = dl.id
+      dl.id must not be 0
+      dl.name mustBe "Sample DL"
+    }
+    "retrieve dashboard list by id" in {
+      val dl = api.getList(dashboardListId).futureValue
+      dl.id mustBe dashboardListId
+      dl.name mustBe "Sample DL"
+    }
+    "retrieve all dashboard lists" in {
+      val dls = api.getAllLists.futureValue
+      dls must not be empty
+      dls.map(_.name) must contain("Sample DL")
+    }
+    "update dashboard list" in {
+      val dl = api.updateList(dashboardListId, "New Sample DL").futureValue
+      dl.id mustBe dashboardListId
+      dl.name mustBe "New Sample DL"
+    }
+    "delete dashboard list" in {
+      val rsp = api.deleteList(dashboardListId).futureValue
+      rsp mustBe true
     }
     "delete dashboards" in {
       dashboardIds map api.delete foreach { rsp =>

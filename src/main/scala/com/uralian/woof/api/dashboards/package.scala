@@ -175,5 +175,6 @@ package object dashboards extends JsonUtils {
     Widget.serializer +
     WidgetGroup.serializer +
     CreateDashboard.serializer +
-    Dashboard.serializer
+    Dashboard.serializer +
+    DashboardList.serializer
 }
