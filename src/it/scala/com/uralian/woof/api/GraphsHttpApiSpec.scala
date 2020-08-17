@@ -111,7 +111,7 @@ class GraphsHttpApiSpec extends AbstractITSpec {
         .withLegend
       val rsp = api.create(request).futureValue
       rsp.id must not be empty
-      rsp.templateVariables mustBe Seq("var")
+      rsp.templateVariables mustBe empty
       rsp.html must (include("legend=true") and include("""width="800""""))
       rsp.title mustBe "Scatter Graph"
       rsp.revoked mustBe false
