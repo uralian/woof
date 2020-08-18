@@ -1,4 +1,7 @@
-## v0.1.1 (June, 2020) [current]
+## v0.2.0 (August, 2020) [current]
+- Implement Dashboard List operations
+
+## v0.1.1 (June, 2020)
 - Fix Event serialization
 
 ## v0.1.0 (May, 2020)
